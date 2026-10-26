@@ -98,8 +98,8 @@ export default function BookingForm({ category = "chauffeur" }) {
       setIsLoadingDropoff(true);
       const res = await fetch(
         `${API_BASE}/routes/destinations?from=${encodeURIComponent(
-          originPlace.trim()
-        )}`
+          originPlace.trim(),
+        )}`,
       );
       if (res.ok) {
         const data = await res.json();
@@ -231,8 +231,8 @@ export default function BookingForm({ category = "chauffeur" }) {
         setIsCalculatingFare(true);
         const res = await fetch(
           `${API_BASE}/routes/lookup?firstPlace=${encodeURIComponent(
-            pickup.trim()
-          )}&lastPlace=${encodeURIComponent(dropoff.trim())}`
+            pickup.trim(),
+          )}&lastPlace=${encodeURIComponent(dropoff.trim())}`,
         );
         if (res.ok) {
           const data = await res.json();
@@ -351,7 +351,7 @@ export default function BookingForm({ category = "chauffeur" }) {
       } else {
         const errorData = await res.json().catch(() => ({}));
         alert(
-          `Booking Notice: ${errorData.message || "Saved as booking request."}`
+          `Booking Notice: ${errorData.message || "Saved as booking request."}`,
         );
       }
     } catch {
@@ -888,7 +888,9 @@ export default function BookingForm({ category = "chauffeur" }) {
         {isCalculatingFare && (
           <div className="p-4 rounded-xl bg-zinc-950/70 border border-white/10 flex items-center justify-center gap-3 text-xs text-zinc-400 animate-pulse">
             <span className="w-3.5 h-3.5 border-2 border-[#c8a05c] border-t-transparent rounded-full animate-spin" />
-            <span>Calculating live route fare from Sydney Transport API...</span>
+            <span>
+              Calculating live route fare from Sydney Transport API...
+            </span>
           </div>
         )}
 
@@ -1100,7 +1102,9 @@ export default function BookingForm({ category = "chauffeur" }) {
                 : "bg-gradient-to-r from-amber-400 to-amber-300 hover:from-amber-300 hover:to-amber-200 hover:shadow-[0_0_25px_rgba(251,191,36,0.4)]"
             }`}
           >
-            {isSubmitting ? "Confirming Booking..." : "Confirm & Reserve Ride →"}
+            {isSubmitting
+              ? "Confirming Booking..."
+              : "Confirm & Reserve Ride →"}
           </button>
         </div>
       </form>

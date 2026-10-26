@@ -2,12 +2,97 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
+import gsap from "gsap";
+import { useGSAP } from "@gsap/react";
 
 export default function BookPage() {
   const router = useRouter();
   const [selectedCategory, setSelectedCategory] = useState("chauffeur");
   const [isNavigating, setIsNavigating] = useState(false);
+  const pageContainerRef = useRef(null);
+
+  useGSAP(
+    () => {
+      const mm = gsap.matchMedia();
+      const tl = gsap.timeline({ defaults: { ease: "power3.out" } });
+
+      // Header step & titles animation
+      tl.fromTo(
+        ".book-step-indicator",
+        { y: -15, opacity: 0 },
+        { y: 0, opacity: 1, duration: 0.6 },
+      )
+        .fromTo(
+          ".book-title",
+          { y: 25, opacity: 0 },
+          { y: 0, opacity: 1, duration: 0.8 },
+          "-=0.4",
+        )
+        .fromTo(
+          ".book-subtitle",
+          { y: 20, opacity: 0 },
+          { y: 0, opacity: 1, duration: 0.7 },
+          "-=0.6",
+        );
+
+      // Category Cards & CTA button reveal
+      mm.add("(min-width: 768px)", () => {
+        tl.fromTo(
+          ".category-card",
+          { y: 40, opacity: 0, scale: 0.96 },
+          {
+            y: 0,
+            opacity: 1,
+            scale: 1,
+            stagger: 0.18,
+            duration: 0.85,
+            ease: "power2.out",
+          },
+          "-=0.4",
+        ).fromTo(
+          ".book-cta-container",
+          { y: 25, opacity: 0, scale: 0.95 },
+          {
+            y: 0,
+            opacity: 1,
+            scale: 1,
+            duration: 0.7,
+            ease: "back.out(1.5)",
+          },
+          "-=0.3",
+        );
+      });
+
+      mm.add("(max-width: 767px)", () => {
+        tl.fromTo(
+          ".category-card",
+          { y: 25, opacity: 0 },
+          {
+            y: 0,
+            opacity: 1,
+            stagger: 0.12,
+            duration: 0.7,
+            ease: "power2.out",
+          },
+          "-=0.4",
+        ).fromTo(
+          ".book-cta-container",
+          { y: 15, opacity: 0 },
+          {
+            y: 0,
+            opacity: 1,
+            duration: 0.6,
+            ease: "power2.out",
+          },
+          "-=0.3",
+        );
+      });
+
+      return () => mm.revert();
+    },
+    { scope: pageContainerRef },
+  );
 
   const handleSelectCategory = (category) => {
     setSelectedCategory(category);
@@ -16,19 +101,19 @@ export default function BookPage() {
   };
 
   return (
-    <div className="w-full flex flex-col items-center">
+    <div ref={pageContainerRef} className="w-full flex flex-col items-center">
       {/* Step indicator breadcrumb */}
-      <div className="flex items-center gap-3 text-xs tracking-widest uppercase font-semibold text-[#c8a05c] mb-3">
+      <div className="book-step-indicator flex items-center gap-3 text-xs tracking-widest uppercase font-semibold text-[#c8a05c] mb-3">
         <span className="w-6 h-6 rounded-full bg-[#c8a05c] text-black flex items-center justify-center font-bold text-xs">
           1
         </span>
         <span>Step 1 of 3: Select Vehicle Category</span>
       </div>
 
-      <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-center text-white font-serif">
+      <h1 className="book-title text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-center text-white font-serif">
         How would you like to travel?
       </h1>
-      <p className="mt-3 text-sm sm:text-base text-zinc-400 text-center max-w-lg">
+      <p className="book-subtitle mt-3 text-sm sm:text-base text-zinc-400 text-center max-w-lg">
         Choose between our prestigious private Chauffeur experience or our
         on-demand fast Taxi service.
       </p>
@@ -39,7 +124,7 @@ export default function BookPage() {
         <button
           type="button"
           onClick={() => handleSelectCategory("chauffeur")}
-          className={`group relative rounded-2xl overflow-hidden border transition-all duration-300 cursor-pointer text-left flex flex-col bg-zinc-900/60 backdrop-blur-md ${
+          className={`category-card group relative rounded-2xl overflow-hidden border transition-all duration-300 cursor-pointer text-left flex flex-col bg-zinc-900/60 backdrop-blur-md ${
             selectedCategory === "chauffeur"
               ? "border-[#c8a05c] shadow-[0_0_35px_rgba(200,160,92,0.25)] ring-2 ring-[#c8a05c]/50 scale-[1.01]"
               : "border-white/10 hover:border-[#c8a05c]/60 hover:bg-zinc-900/80"
@@ -164,7 +249,7 @@ export default function BookPage() {
         <button
           type="button"
           onClick={() => handleSelectCategory("taxi")}
-          className={`group relative rounded-2xl overflow-hidden border transition-all duration-300 cursor-pointer text-left flex flex-col bg-zinc-900/60 backdrop-blur-md ${
+          className={`category-card group relative rounded-2xl overflow-hidden border transition-all duration-300 cursor-pointer text-left flex flex-col bg-zinc-900/60 backdrop-blur-md ${
             selectedCategory === "taxi"
               ? "border-amber-400 shadow-[0_0_35px_rgba(251,191,36,0.25)] ring-2 ring-amber-400/50 scale-[1.01]"
               : "border-white/10 hover:border-amber-400/60 hover:bg-zinc-900/80"
@@ -304,7 +389,7 @@ export default function BookPage() {
       </div>
 
       {/* Continue Button */}
-      <div className="mt-10 sm:mt-12 flex flex-col items-center gap-3 w-full max-w-md">
+      <div className="book-cta-container mt-10 sm:mt-12 flex flex-col items-center gap-3 w-full max-w-md">
         <button
           type="button"
           onClick={() => handleSelectCategory(selectedCategory)}

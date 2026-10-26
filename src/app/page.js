@@ -2,22 +2,230 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useRef, useState } from "react";
+import gsap from "gsap";
+import { useGSAP } from "@gsap/react";
 
 export default function Home() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const containerRef = useRef(null);
+  const mobileMenuRef = useRef(null);
+  const isAnimatingRef = useRef(false);
+
+  // Smooth open / close mobile menu animation using GSAP
+  const toggleMobileMenu = () => {
+    if (isAnimatingRef.current) return;
+    const menuEl = mobileMenuRef.current;
+    if (!menuEl) return;
+
+    if (!mobileMenuOpen) {
+      // OPEN MENU
+      isAnimatingRef.current = true;
+      setMobileMenuOpen(true);
+      menuEl.style.display = "block";
+
+      const items = menuEl.querySelectorAll(".mobile-menu-item");
+      const tl = gsap.timeline({
+        onComplete: () => {
+          isAnimatingRef.current = false;
+        },
+      });
+
+      tl.fromTo(
+        menuEl,
+        { height: 0, opacity: 0, y: -10 },
+        {
+          height: "auto",
+          opacity: 1,
+          y: 0,
+          duration: 0.4,
+          ease: "power2.out",
+        },
+      ).fromTo(
+        items,
+        { y: -15, opacity: 0 },
+        {
+          y: 0,
+          opacity: 1,
+          stagger: 0.08,
+          duration: 0.35,
+          ease: "power2.out",
+        },
+        "-=0.2",
+      );
+    } else {
+      // CLOSE MENU
+      closeMobileMenu();
+    }
+  };
+
+  const closeMobileMenu = () => {
+    const menuEl = mobileMenuRef.current;
+    if (!menuEl) {
+      setMobileMenuOpen(false);
+      return;
+    }
+
+    isAnimatingRef.current = true;
+    const items = menuEl.querySelectorAll(".mobile-menu-item");
+
+    const tl = gsap.timeline({
+      onComplete: () => {
+        menuEl.style.display = "none";
+        setMobileMenuOpen(false);
+        isAnimatingRef.current = false;
+      },
+    });
+
+    tl.to(items, {
+      y: -10,
+      opacity: 0,
+      stagger: 0.04,
+      duration: 0.2,
+      ease: "power2.in",
+    }).to(
+      menuEl,
+      {
+        height: 0,
+        opacity: 0,
+        y: -10,
+        duration: 0.25,
+        ease: "power2.in",
+      },
+      "-=0.1",
+    );
+  };
+
+  useGSAP(
+    () => {
+      // Responsive animation management using GSAP matchMedia
+      const mm = gsap.matchMedia();
+
+      // Master timeline for entry animations
+      const tl = gsap.timeline({ defaults: { ease: "power3.out" } });
+
+      // 1. Hero background zoom & fade
+      tl.fromTo(
+        ".hero-bg-img",
+        { scale: 1.15, opacity: 0 },
+        { scale: 1, opacity: 1, duration: 1.8, ease: "power2.out" },
+      );
+
+      // 2. Header and Top Bar entry
+      tl.fromTo(
+        ".top-bar-contact",
+        { y: -20, opacity: 0 },
+        { y: 0, opacity: 1, duration: 0.6 },
+        "-=1.2",
+      ).fromTo(
+        ".main-navbar",
+        { y: -30, opacity: 0 },
+        { y: 0, opacity: 1, duration: 0.8 },
+        "-=0.9",
+      );
+
+      // Desktop & Tablet screens (min-width: 768px)
+      mm.add("(min-width: 768px)", () => {
+        // Desktop hero typography & button reveal
+        tl.fromTo(
+          ".hero-headline",
+          { y: 45, opacity: 0 },
+          { y: 0, opacity: 1, duration: 1 },
+          "-=0.5",
+        )
+          .fromTo(
+            ".hero-subtitle",
+            { y: 30, opacity: 0 },
+            { y: 0, opacity: 1, duration: 0.8 },
+            "-=0.7",
+          )
+          .fromTo(
+            ".hero-cta-btn",
+            { scale: 0.85, opacity: 0, y: 20 },
+            {
+              scale: 1,
+              opacity: 1,
+              y: 0,
+              duration: 0.8,
+              ease: "back.out(1.7)",
+            },
+            "-=0.5",
+          )
+          .fromTo(
+            ".stat-item",
+            { y: 35, opacity: 0 },
+            { y: 0, opacity: 1, stagger: 0.14, duration: 0.8 },
+            "-=0.4",
+          )
+          .fromTo(
+            ".chat-widget",
+            { scale: 0, opacity: 0 },
+            { scale: 1, opacity: 1, duration: 0.6, ease: "back.out(2)" },
+            "-=0.2",
+          );
+      });
+
+      // Mobile screens (max-width: 767px) - Optimized and snappy for touch devices
+      mm.add("(max-width: 767px)", () => {
+        tl.fromTo(
+          ".hero-headline",
+          { y: 25, opacity: 0 },
+          { y: 0, opacity: 1, duration: 0.8 },
+          "-=0.5",
+        )
+          .fromTo(
+            ".hero-subtitle",
+            { y: 20, opacity: 0 },
+            { y: 0, opacity: 1, duration: 0.7 },
+            "-=0.5",
+          )
+          .fromTo(
+            ".hero-cta-btn",
+            { scale: 0.9, opacity: 0, y: 15 },
+            {
+              scale: 1,
+              opacity: 1,
+              y: 0,
+              duration: 0.7,
+              ease: "back.out(1.5)",
+            },
+            "-=0.4",
+          )
+          .fromTo(
+            ".stat-item",
+            { y: 20, opacity: 0 },
+            { y: 0, opacity: 1, stagger: 0.1, duration: 0.6 },
+            "-=0.3",
+          )
+          .fromTo(
+            ".chat-widget",
+            { scale: 0, opacity: 0 },
+            { scale: 1, opacity: 1, duration: 0.5, ease: "back.out(2)" },
+            "-=0.2",
+          );
+      });
+
+      return () => mm.revert();
+    },
+    { scope: containerRef },
+  );
 
   return (
-    <div className="relative min-h-screen w-full flex flex-col font-sans select-none overflow-x-hidden text-white">
+    <div
+      ref={containerRef}
+      className="relative min-h-screen w-full flex flex-col font-sans select-none overflow-x-hidden text-white"
+    >
       {/* Background Hero Image with Dark Gradient Overlay */}
-      <div className="absolute inset-0 z-0">
-        <Image
-          src="/hero-bg.jpg"
-          alt="Luxury chauffeur service in Australia"
-          fill
-          priority
-          className="object-cover object-center"
-        />
+      <div className="absolute inset-0 z-0 overflow-hidden">
+        <div className="hero-bg-img relative w-full h-full">
+          <Image
+            src="/hero-bg.jpg"
+            alt="Luxury chauffeur service in Australia"
+            fill
+            priority
+            className="object-cover object-center"
+          />
+        </div>
         {/* Cinematic darken overlay to match the screenshot atmosphere */}
         <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/60 to-black/35" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-black/70" />
@@ -25,37 +233,11 @@ export default function Home() {
 
       {/* Header / Navigation Bar */}
       <header className="relative z-20 w-full">
-        {/* Top bar (small secondary utility links) */}
-        <div className="w-full border-b border-white/10 bg-black/20 backdrop-blur-sm">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-9 flex items-center justify-end text-xs text-zinc-300 font-medium tracking-wide gap-6">
+        {/* Top bar (contact utility) */}
+        <div className="top-bar-contact w-full border-b border-white/10 bg-black/20 backdrop-blur-sm">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-9 flex items-center justify-end text-xs text-zinc-300 font-medium tracking-wide">
             <a
-              href="#join-the-fleet"
-              className="hover:text-white transition-colors"
-            >
-              Join The Fleet
-            </a>
-            <div className="relative group cursor-pointer flex items-center gap-1 hover:text-white transition-colors">
-              <span>Accounts</span>
-              <svg
-                className="w-3 h-3 text-zinc-400 group-hover:text-white transition-transform group-hover:rotate-180"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                aria-hidden="true"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M19 9l-7 7-7-7"
-                />
-              </svg>
-            </div>
-            <a href="#reviews" className="hover:text-white transition-colors">
-              Reviews
-            </a>
-            <a
-              href="tel:1300615165"
+              href="tel:+61404410000"
               className="flex items-center gap-1.5 text-zinc-200 hover:text-white transition-colors font-semibold"
             >
               <svg
@@ -66,13 +248,13 @@ export default function Home() {
               >
                 <path d="M6.62 10.79a15.053 15.053 0 006.59 6.59l2.2-2.2a1 1 0 011.01-.24c1.12.37 2.33.57 3.58.57a1 1 0 011 1V20a1 1 0 01-1 1C10.61 21 3 13.39 3 4a1 1 0 011-1h3.5a1 1 0 011 1c0 1.25.2 2.46.57 3.58a1 1 0 01-.25 1.01l-2.2 2.2z" />
               </svg>
-              <span>1300 615 165</span>
+              <span>+61 404 410 000</span>
             </a>
           </div>
         </div>
 
         {/* Primary Navbar */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
+        <div className="main-navbar max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
           {/* Logo SYD Airport Transfer */}
           <a href="/" className="flex items-center gap-3 group">
             <div className="w-11 h-11 rounded-full border border-[#d3ad6b]/60 flex items-center justify-center bg-black/40 shadow-inner group-hover:border-[#e7c27d] transition-all">
@@ -94,111 +276,10 @@ export default function Home() {
           </a>
 
           {/* Desktop Navigation Links */}
-          <nav className="hidden lg:flex items-center gap-7 text-sm font-medium text-zinc-200">
-            <button
-              type="button"
-              className="flex items-center gap-1 hover:text-white transition-colors cursor-pointer"
-            >
-              <span>Airport Transfers</span>
-              <svg
-                className="w-3.5 h-3.5 text-zinc-400"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                aria-hidden="true"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M19 9l-7 7-7-7"
-                />
-              </svg>
-            </button>
-
-            <button
-              type="button"
-              className="flex items-center gap-1 hover:text-white transition-colors cursor-pointer"
-            >
-              <span>Locations</span>
-              <svg
-                className="w-3.5 h-3.5 text-zinc-400"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                aria-hidden="true"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M19 9l-7 7-7-7"
-                />
-              </svg>
-            </button>
-
-            <button
-              type="button"
-              className="flex items-center gap-1 hover:text-white transition-colors cursor-pointer"
-            >
-              <span>Services</span>
-              <svg
-                className="w-3.5 h-3.5 text-zinc-400"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                aria-hidden="true"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M19 9l-7 7-7-7"
-                />
-              </svg>
-            </button>
-
-            <button
-              type="button"
-              className="flex items-center gap-1 hover:text-white transition-colors cursor-pointer"
-            >
-              <span>The Fleet</span>
-              <svg
-                className="w-3.5 h-3.5 text-zinc-400"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                aria-hidden="true"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M19 9l-7 7-7-7"
-                />
-              </svg>
-            </button>
-
-            <button
-              type="button"
-              className="flex items-center gap-1 hover:text-white transition-colors cursor-pointer"
-            >
-              <span>About Us</span>
-              <svg
-                className="w-3.5 h-3.5 text-zinc-400"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                aria-hidden="true"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M19 9l-7 7-7-7"
-                />
-              </svg>
-            </button>
+          <nav className="hidden lg:flex items-center gap-8 text-sm font-medium text-zinc-200">
+            <a href="#about-us" className="hover:text-white transition-colors">
+              About Us
+            </a>
 
             <a
               href="#contact-us"
@@ -220,98 +301,77 @@ export default function Home() {
           <div className="flex lg:hidden">
             <button
               type="button"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 text-zinc-200 hover:text-white"
+              onClick={() => toggleMobileMenu()}
+              className="p-2 text-zinc-200 hover:text-white transition-transform active:scale-90"
               aria-label="Toggle menu"
             >
-              <svg
-                className="w-6 h-6"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                aria-hidden="true"
-              >
-                {mobileMenuOpen ? (
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                ) : (
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M4 6h16M4 12h16M4 18h16"
-                  />
-                )}
-              </svg>
+              <div className="w-6 h-5 relative flex flex-col justify-between">
+                <span
+                  className={`w-full h-0.5 bg-current rounded-full transform transition-all duration-300 origin-left ${
+                    mobileMenuOpen
+                      ? "rotate-45 translate-x-0.5 -translate-y-0.5"
+                      : ""
+                  }`}
+                />
+                <span
+                  className={`w-full h-0.5 bg-current rounded-full transition-opacity duration-200 ${
+                    mobileMenuOpen ? "opacity-0" : "opacity-100"
+                  }`}
+                />
+                <span
+                  className={`w-full h-0.5 bg-current rounded-full transform transition-all duration-300 origin-left ${
+                    mobileMenuOpen
+                      ? "-rotate-45 translate-x-0.5 translate-y-0.5"
+                      : ""
+                  }`}
+                />
+              </div>
             </button>
           </div>
         </div>
 
-        {/* Mobile menu dropdown */}
-        {mobileMenuOpen && (
-          <div className="lg:hidden bg-zinc-950/95 backdrop-blur-md border-b border-white/10 px-6 py-4 space-y-3">
-            <a
-              href="#airport-transfers"
-              className="block text-zinc-300 hover:text-white py-1"
+        {/* Mobile menu dropdown with GSAP animation */}
+        <div
+          ref={mobileMenuRef}
+          style={{ display: "none" }}
+          className="lg:hidden bg-zinc-950/95 backdrop-blur-md border-b border-white/10 px-6 py-5 space-y-4 overflow-hidden"
+        >
+          <a
+            href="#about-us"
+            onClick={() => closeMobileMenu()}
+            className="mobile-menu-item block text-base font-medium text-zinc-200 hover:text-white py-1 transition-colors"
+          >
+            About Us
+          </a>
+          <a
+            href="#contact-us"
+            onClick={() => closeMobileMenu()}
+            className="mobile-menu-item block text-base font-medium text-zinc-200 hover:text-white py-1 transition-colors"
+          >
+            Contact Us
+          </a>
+          <div className="mobile-menu-item pt-2">
+            <Link
+              href="/book"
+              onClick={() => closeMobileMenu()}
+              className="block text-center w-full py-3 rounded-lg border border-[#c8a05c] bg-gradient-to-r from-[#c59e5f] to-[#e4bf7e] text-black font-bold text-sm tracking-wider uppercase shadow-lg shadow-[#c8a05c]/10"
             >
-              Airport Transfers
-            </a>
-            <a
-              href="#locations"
-              className="block text-zinc-300 hover:text-white py-1"
-            >
-              Locations
-            </a>
-            <a
-              href="#services"
-              className="block text-zinc-300 hover:text-white py-1"
-            >
-              Services
-            </a>
-            <a
-              href="#the-fleet"
-              className="block text-zinc-300 hover:text-white py-1"
-            >
-              The Fleet
-            </a>
-            <a
-              href="#about-us"
-              className="block text-zinc-300 hover:text-white py-1"
-            >
-              About Us
-            </a>
-            <a
-              href="#contact-us"
-              className="block text-zinc-300 hover:text-white py-1"
-            >
-              Contact Us
-            </a>
-            <div className="pt-2">
-              <Link
-                href="/book"
-                className="block text-center w-full py-2.5 rounded border border-[#c8a05c] bg-[#c8a05c] text-black font-semibold text-sm"
-              >
-                Book Now
-              </Link>
-            </div>
+              Book Now
+            </Link>
           </div>
-        )}
+        </div>
       </header>
 
       {/* Hero Body Content */}
       <main className="relative z-10 flex-1 flex flex-col justify-center max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-16 sm:pt-24 pb-16">
         <div className="max-w-2xl">
           {/* Main Headline */}
-          <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-white leading-[1.12] drop-shadow-md">
+          <h1 className="hero-headline text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-white leading-[1.12] drop-shadow-md">
             Australia&apos;s Chauffeur Service
           </h1>
 
           {/* Subtitle */}
-          <p className="mt-4 sm:mt-5 text-base sm:text-lg text-zinc-200/90 font-normal leading-relaxed max-w-xl">
+          <p className="hero-subtitle mt-4 sm:mt-5 text-base sm:text-lg text-zinc-200/90 font-normal leading-relaxed max-w-xl">
             Experience the SYD Airport Transfer difference with premium
             transfers, tours and event transport.
           </p>
@@ -321,33 +381,17 @@ export default function Home() {
             {/* BOOK NOW gold button */}
             <Link
               href="/book"
-              className="px-6 py-3.5 text-xs sm:text-sm font-bold tracking-wider uppercase rounded bg-[#c59e5f] hover:bg-[#d6af70] text-[#1a140b] shadow-lg transition-transform active:scale-95"
+              className="hero-cta-btn px-8 py-3.5 text-xs sm:text-sm font-bold tracking-wider uppercase rounded bg-[#c59e5f] hover:bg-[#d6af70] text-[#1a140b] shadow-lg transition-transform active:scale-95"
             >
               Book Now
             </Link>
-
-            {/* MANAGE BOOKING outline button */}
-            <a
-              href="#manage"
-              className="px-6 py-3.5 text-xs sm:text-sm font-semibold tracking-wider uppercase rounded border border-white/80 hover:border-white text-white hover:bg-white/10 transition-colors"
-            >
-              Manage Booking
-            </a>
-
-            {/* GET AN INSTANT QUOTE outline button */}
-            <a
-              href="#quote"
-              className="px-6 py-3.5 text-xs sm:text-sm font-semibold tracking-wider uppercase rounded border border-white/80 hover:border-white text-white hover:bg-white/10 transition-colors"
-            >
-              Get An Instant Quote
-            </a>
           </div>
         </div>
 
-        {/* Bottom Statistics and App Store Badges Bar */}
-        <div className="mt-16 sm:mt-24 pt-8 border-t border-white/10 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8 items-end">
+        {/* Bottom Statistics Bar */}
+        <div className="mt-16 sm:mt-24 pt-8 border-t border-white/10 grid grid-cols-2 md:grid-cols-4 gap-8 items-end">
           {/* Stat 1 */}
-          <div>
+          <div className="stat-item">
             <div className="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight">
               2.95m
             </div>
@@ -357,7 +401,7 @@ export default function Home() {
           </div>
 
           {/* Stat 2 */}
-          <div>
+          <div className="stat-item">
             <div className="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight">
               14,000+
             </div>
@@ -367,7 +411,7 @@ export default function Home() {
           </div>
 
           {/* Stat 3 */}
-          <div>
+          <div className="stat-item">
             <div className="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight">
               13
             </div>
@@ -377,7 +421,7 @@ export default function Home() {
           </div>
 
           {/* Stat 4 */}
-          <div>
+          <div className="stat-item">
             <div className="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight">
               1500+
             </div>
@@ -385,79 +429,11 @@ export default function Home() {
               Size of fleet
             </div>
           </div>
-
-          {/* App download buttons */}
-          <div className="col-span-2 sm:col-span-2 md:col-span-4 lg:col-span-1 flex flex-col items-start lg:items-end justify-center">
-            <div className="flex flex-row items-center gap-2">
-              {/* Google Play badge */}
-              <a
-                href="#google-play"
-                className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-black/80 hover:bg-black border border-white/30 text-white transition-all shadow-md"
-              >
-                <svg
-                  className="w-5 h-5"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  aria-hidden="true"
-                >
-                  <path
-                    d="M3.6 1.7L13.8 12 3.6 22.3C3.2 21.8 3 21.2 3 20.4V3.6C3 2.8 3.2 2.2 3.6 1.7Z"
-                    fill="#2196F3"
-                  />
-                  <path
-                    d="M17.2 8.6L13.8 12L3.6 1.7C4.1 1.3 4.9 1.1 5.7 1.6L17.2 8.6Z"
-                    fill="#4CAF50"
-                  />
-                  <path
-                    d="M17.2 15.4L5.7 22.4C4.9 22.9 4.1 22.7 3.6 22.3L13.8 12L17.2 15.4Z"
-                    fill="#F44336"
-                  />
-                  <path
-                    d="M21.2 10.7L17.2 8.6L13.8 12L17.2 15.4L21.2 13.3C22.3 12.6 22.3 11.4 21.2 10.7Z"
-                    fill="#FFEB3B"
-                  />
-                </svg>
-                <div className="flex flex-col text-left leading-none">
-                  <span className="text-[8px] uppercase tracking-wider text-zinc-300 font-medium">
-                    Get it on
-                  </span>
-                  <span className="text-xs font-semibold text-white">
-                    Google Play
-                  </span>
-                </div>
-              </a>
-
-              {/* Apple App Store badge */}
-              <a
-                href="#app-store"
-                className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-black/80 hover:bg-black border border-white/30 text-white transition-all shadow-md"
-              >
-                <svg
-                  className="w-5 h-5 fill-current text-white"
-                  viewBox="0 0 170 170"
-                  aria-hidden="true"
-                >
-                  <path d="M150.37 130.25c-2.45 5.66-5.35 10.87-8.71 15.66-4.58 6.53-8.33 11.05-11.22 13.56-4.48 4.12-9.28 6.23-14.42 6.35-3.69 0-8.14-1.05-13.32-3.18-5.19-2.12-9.97-3.17-14.34-3.17-4.58 0-9.49 1.05-14.75 3.17-5.26 2.13-9.5 3.24-12.74 3.35-4.35.13-9.16-1.9-14.42-6.08-3.69-3.04-7.5-7.71-11.44-14.01-6.19-9.84-11.05-20.73-14.59-32.68-3.53-11.95-5.3-23.27-5.3-33.96 0-14.88 3.73-27.13 11.2-36.75 7.46-9.62 16.92-14.53 28.38-14.75 5.11 0 10.62 1.35 16.54 4.05 5.92 2.7 9.77 4.1 11.55 4.22 1.48-.12 5.51-1.63 12.09-4.53 6.58-2.9 12.35-4.15 17.3-3.75 13.57.8 24.32 5.75 32.25 14.85-11.75 7.15-17.5 16.89-17.26 29.21.24 9.63 4.1 17.65 11.57 24.05 7.48 6.4 16.32 10.15 26.54 11.25-2.22 6.78-4.87 13.55-7.96 20.32zM119.22 33.15c0-7.35 2.65-14.15 7.94-20.4 5.29-6.25 11.77-10.29 19.45-12.12.8 3.69.87 7.2.22 10.53-.65 3.33-2.12 6.94-4.41 10.83-2.6 4.38-5.83 7.89-9.7 10.53-3.87 2.64-7.83 4.29-11.88 4.95-.5-1.42-.9-2.85-1.2-4.32-.42-1.47-.62-2.87-.62-4.2z" />
-                </svg>
-                <div className="flex flex-col text-left leading-none">
-                  <span className="text-[8px] uppercase tracking-wider text-zinc-300 font-medium">
-                    Download on the
-                  </span>
-                  <span className="text-xs font-semibold text-white">
-                    App Store
-                  </span>
-                </div>
-              </a>
-            </div>
-            <span className="text-[11px] text-zinc-400 mt-2 font-medium">
-              Download the SYD Airport Transfer app
-            </span>
-          </div>
         </div>
       </main>
 
       {/* Floating Chat widget button in bottom right corner */}
-      <div className="fixed bottom-6 right-6 z-30">
+      <div className="chat-widget fixed bottom-6 right-6 z-30">
         <button
           type="button"
           aria-label="Open chat support"
