@@ -18,7 +18,7 @@ export default function PassengerDetailsForm({
   return (
     <>
       {/* Passenger & Luggage Counts */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label
             htmlFor="passengers-select"
@@ -59,23 +59,6 @@ export default function PassengerDetailsForm({
               </option>
             ))}
           </select>
-        </div>
-
-        <div>
-          <label
-            htmlFor="flight-input"
-            className="block text-xs font-semibold uppercase tracking-wider text-zinc-300 mb-2"
-          >
-            Flight # (Optional)
-          </label>
-          <input
-            id="flight-input"
-            type="text"
-            value={flightNumber}
-            onChange={(e) => setFlightNumber(e.target.value)}
-            placeholder="e.g. QF1, VA805"
-            className="w-full px-4 py-3.5 rounded-xl bg-black/60 border border-white/15 focus:border-[#c8a05c] focus:ring-1 focus:ring-[#c8a05c] text-white placeholder-zinc-500 text-sm outline-none transition-all uppercase"
-          />
         </div>
       </div>
 
