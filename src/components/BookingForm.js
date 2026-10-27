@@ -23,7 +23,10 @@ export default function BookingForm({ category = "chauffeur" }) {
   const [pickupNotice, setPickupNotice] = useState("");
 
   // Booking Form State
-  const [pickupDate, setPickupDate] = useState("2026-10-27");
+  const [pickupDate, setPickupDate] = useState(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  });
   const [pickupTime, setPickupTime] = useState("10:00");
   const [passengers, setPassengers] = useState(2);
   const [luggage, setLuggage] = useState(2);
@@ -31,6 +34,11 @@ export default function BookingForm({ category = "chauffeur" }) {
   const [passengerName, setPassengerName] = useState("");
   const [passengerPhone, setPassengerPhone] = useState("");
   const [passengerEmail, setPassengerEmail] = useState("");
+
+  // Date & Time Picker UI State
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [calendarViewDate, setCalendarViewDate] = useState(() => new Date());
 
   // Route Quote State
   const [routeData, setRouteData] = useState(null);
@@ -44,6 +52,10 @@ export default function BookingForm({ category = "chauffeur" }) {
   const dropoffContainerRef = useRef(null);
   const pickupInputRef = useRef(null);
   const dropoffInputRef = useRef(null);
+  const dateContainerRef = useRef(null);
+  const timeContainerRef = useRef(null);
+  const nativeDateInputRef = useRef(null);
+  const nativeTimeInputRef = useRef(null);
 
   // 1. Initial load: fetch all unique route places
   useEffect(() => {
@@ -57,7 +69,7 @@ export default function BookingForm({ category = "chauffeur" }) {
           setPickupSuggestions(data.places);
         }
       })
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => {
         if (isMounted) setIsLoadingPickup(false);
       });
@@ -67,7 +79,7 @@ export default function BookingForm({ category = "chauffeur" }) {
     };
   }, []);
 
-  // Close dropdowns on outside click
+  // Close dropdowns & popovers on outside click
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (
@@ -82,10 +94,73 @@ export default function BookingForm({ category = "chauffeur" }) {
       ) {
         setShowDropoffDropdown(false);
       }
+      if (
+        dateContainerRef.current &&
+        !dateContainerRef.current.contains(event.target)
+      ) {
+        setShowDatePicker(false);
+      }
+      if (
+        timeContainerRef.current &&
+        !timeContainerRef.current.contains(event.target)
+      ) {
+        setShowTimePicker(false);
+      }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  const todayStr = (() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  })();
+
+  const formatDisplayDate = (dStr) => {
+    if (!dStr) return "Select pickup date";
+    const parts = dStr.split("-").map(Number);
+    if (parts.length !== 3) return dStr;
+    const date = new Date(parts[0], parts[1] - 1, parts[2]);
+    if (isNaN(date.getTime())) return dStr;
+    return date.toLocaleDateString("en-AU", {
+      weekday: "short",
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+  };
+
+  const formatDisplayTime = (tStr) => {
+    if (!tStr) return "Select pickup time";
+    const [h, m] = tStr.split(":").map(Number);
+    if (isNaN(h)) return tStr;
+    const period = h >= 12 ? "PM" : "AM";
+    const h12 = h % 12 === 0 ? 12 : h % 12;
+    return `${h12}:${String(m ?? 0).padStart(2, "0")} ${period}`;
+  };
+
+  const parseTime = (timeStr) => {
+    const [h24Str, mStr] = (timeStr || "10:00").split(":");
+    let h24 = parseInt(h24Str, 10);
+    if (isNaN(h24)) h24 = 10;
+    const m = parseInt(mStr, 10) || 0;
+    const period = h24 >= 12 ? "PM" : "AM";
+    const h12 = h24 % 12 === 0 ? 12 : h24 % 12;
+    return {
+      h12,
+      minute: m,
+      period,
+      h12Str: String(h12).padStart(2, "0"),
+      minuteStr: String(m).padStart(2, "0"),
+    };
+  };
+
+  const composeTime = (h12, minute, period) => {
+    let h24 = Number(h12) % 12;
+    if (period === "PM") h24 += 12;
+    const m = Number(minute);
+    return `${String(h24).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+  };
 
   // 2. Fetch connected destinations for a given pickup place
   const fetchDestinationsForPickup = useCallback(async (originPlace) => {
@@ -266,20 +341,29 @@ export default function BookingForm({ category = "chauffeur" }) {
     let vehicleKey = "taxi";
 
     if (isChauffeur) {
-      vehicleKey = "executive";
+      vehicleKey = "Chauffeur";
       baseFare =
-        vFares.executive ||
-        vFares.luxury ||
-        vFares.sedan ||
-        Object.values(vFares)[0] ||
+        vFares.Chauffeur ??
+        vFares.chauffeur ??
+        vFares.executive ??
+        vFares.luxury ??
+        vFares.sedan ??
+        Object.values(vFares)[0] ??
         85;
     } else {
-      vehicleKey = "taxi";
-      baseFare = vFares.taxi || Object.values(vFares)[0] || 65;
+      vehicleKey = "Taxi";
+      baseFare =
+        vFares.Taxi ??
+        vFares.taxi ??
+        Object.values(vFares)[1] ??
+        Object.values(vFares)[0] ??
+        65;
     }
 
     const perPersonInc =
       routeData.increaseFarePerPerson?.[vehicleKey] ||
+      routeData.increaseFarePerPerson?.[vehicleKey.toLowerCase()] ||
+      routeData.increaseFarePerPerson?.Taxi ||
       routeData.increaseFarePerPerson?.taxi ||
       10;
 
@@ -311,8 +395,8 @@ export default function BookingForm({ category = "chauffeur" }) {
       return;
     }
 
-    if (!passengerName.trim() || !passengerPhone.trim()) {
-      alert("Please provide your contact name and mobile phone number.");
+    if (!passengerName.trim() || !passengerPhone.trim() || !passengerEmail.trim()) {
+      alert("Please provide your contact name, mobile phone number, and email address.");
       return;
     }
 
@@ -323,10 +407,10 @@ export default function BookingForm({ category = "chauffeur" }) {
         dropoff: dropoff.trim(),
         pickupTime: new Date(`${pickupDate}T${pickupTime}`),
         passengers,
-        vehicleType: isChauffeur ? "Executive Chauffeur" : "Standard Taxi",
+        vehicleType: isChauffeur ? "Chauffeur" : "Taxi",
         passengerName: passengerName.trim(),
         passengerPhone: passengerPhone.trim(),
-        passengerEmail: passengerEmail.trim(),
+        passengerEmail: passengerEmail.trim().toLowerCase(),
         fare: {
           currency: calculatedFare?.currency || "AUD",
           total: calculatedFare?.total || (isChauffeur ? 95 : 75),
@@ -351,11 +435,11 @@ export default function BookingForm({ category = "chauffeur" }) {
       } else {
         const errorData = await res.json().catch(() => ({}));
         alert(
-          `Booking Notice: ${errorData.message || "Saved as booking request."}`,
+          `Booking Notice: ${errorData.message || "Failed to create booking. Please try again."}`,
         );
       }
     } catch {
-      alert("Request received! Our team will contact you shortly to confirm.");
+      alert("Unable to reach the booking server. Please check your connection and try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -424,8 +508,9 @@ export default function BookingForm({ category = "chauffeur" }) {
               </div>
               <div className="flex justify-between py-1 border-b border-white/5">
                 <span className="text-zinc-500">Passenger Contact:</span>
-                <span className="text-white">
-                  {passengerName} ({passengerPhone})
+                <span className="text-white text-right">
+                  {passengerName} ({passengerPhone})<br />
+                  <span className="text-xs text-zinc-400">{confirmedBooking.passengerEmail || passengerEmail}</span>
                 </span>
               </div>
               <div className="flex justify-between py-2 bg-white/5 px-3 rounded-lg text-sm sm:text-base font-bold">
@@ -438,8 +523,9 @@ export default function BookingForm({ category = "chauffeur" }) {
             </div>
 
             <p className="text-xs text-zinc-400 text-center">
-              A confirmation SMS has been dispatched. Free cancellation up to 2
-              hours before pickup.
+              A confirmation receipt and booking details have been sent to{" "}
+              <span className="text-white font-medium">{confirmedBooking.passengerEmail || passengerEmail}</span>.
+              Free cancellation up to 2 hours before pickup.
             </p>
 
             <button
@@ -469,17 +555,15 @@ export default function BookingForm({ category = "chauffeur" }) {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between w-full mb-6 p-4 rounded-xl bg-zinc-900/80 border border-white/10 backdrop-blur-md gap-3">
         <div className="flex items-center gap-3">
           <span
-            className={`w-2.5 h-2.5 rounded-full animate-pulse ${
-              isChauffeur ? "bg-[#c8a05c]" : "bg-amber-400"
-            }`}
+            className={`w-2.5 h-2.5 rounded-full animate-pulse ${isChauffeur ? "bg-[#c8a05c]" : "bg-amber-400"
+              }`}
           />
           <span className="text-xs sm:text-sm text-zinc-400">
             Selected Service:
           </span>
           <span
-            className={`text-xs sm:text-sm font-bold uppercase tracking-wider ${
-              isChauffeur ? "text-[#e8c683]" : "text-amber-300"
-            }`}
+            className={`text-xs sm:text-sm font-bold uppercase tracking-wider ${isChauffeur ? "text-[#e8c683]" : "text-amber-300"
+              }`}
           >
             {isChauffeur ? "Executive Chauffeur" : "Standard & Maxi Taxi"}
           </span>
@@ -513,11 +597,10 @@ export default function BookingForm({ category = "chauffeur" }) {
 
       {/* Category Feature Highlights */}
       <div
-        className={`w-full mb-6 p-3.5 rounded-xl border text-xs flex flex-wrap items-center justify-around gap-2 ${
-          isChauffeur
+        className={`w-full mb-6 p-3.5 rounded-xl border text-xs flex flex-wrap items-center justify-around gap-2 ${isChauffeur
             ? "bg-[#c8a05c]/10 border-[#c8a05c]/30 text-[#e8c683]"
             : "bg-amber-400/10 border-amber-400/30 text-amber-300"
-        }`}
+          }`}
       >
         {isChauffeur ? (
           <>
@@ -564,22 +647,20 @@ export default function BookingForm({ category = "chauffeur" }) {
         <button
           type="button"
           onClick={() => handleSelectPickup({ name: "Sydney Airport (SYD)" })}
-          className={`px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-all cursor-pointer ${
-            pickup === "Sydney Airport (SYD)"
+          className={`px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-all cursor-pointer ${pickup === "Sydney Airport (SYD)"
               ? "border-[#c8a05c] bg-[#c8a05c]/20 text-[#e8c683] ring-1 ring-[#c8a05c]"
               : "border-white/20 hover:border-[#c8a05c] hover:text-[#e8c683] bg-white/5"
-          }`}
+            }`}
         >
           ✈️ Sydney Airport (SYD)
         </button>
         <button
           type="button"
           onClick={() => handleSelectPickup({ name: "Sydney CBD" })}
-          className={`px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-all cursor-pointer ${
-            pickup === "Sydney CBD"
+          className={`px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-all cursor-pointer ${pickup === "Sydney CBD"
               ? "border-[#c8a05c] bg-[#c8a05c]/20 text-[#e8c683] ring-1 ring-[#c8a05c]"
               : "border-white/20 hover:border-[#c8a05c] hover:text-[#e8c683] bg-white/5"
-          }`}
+            }`}
         >
           🏙️ Sydney CBD
         </button>
@@ -652,11 +733,10 @@ export default function BookingForm({ category = "chauffeur" }) {
               }}
               onChange={(e) => handlePickupChange(e.target.value)}
               placeholder="Type or select pickup location (e.g. Sydney Airport, Sydney CBD)..."
-              className={`w-full pl-11 pr-10 py-3.5 rounded-xl bg-black/60 border text-white placeholder-zinc-500 text-sm outline-none transition-all ${
-                pickupNotice
+              className={`w-full pl-11 pr-10 py-3.5 rounded-xl bg-black/60 border text-white placeholder-zinc-500 text-sm outline-none transition-all ${pickupNotice
                   ? "border-[#c8a05c] ring-2 ring-[#c8a05c]/50"
                   : "border-white/15 focus:border-[#c8a05c] focus:ring-1 focus:ring-[#c8a05c]"
-              }`}
+                }`}
             />
             {isLoadingPickup ? (
               <div className="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none">
@@ -704,11 +784,10 @@ export default function BookingForm({ category = "chauffeur" }) {
                       handleSelectPickup(placeObj);
                     }}
                     onClick={() => handleSelectPickup(placeObj)}
-                    className={`w-full px-4 py-3 text-left transition-colors flex items-center justify-between group cursor-pointer ${
-                      isSelected
+                    className={`w-full px-4 py-3 text-left transition-colors flex items-center justify-between group cursor-pointer ${isSelected
                         ? "bg-[#c8a05c]/20 text-[#e8c683]"
                         : "hover:bg-zinc-800/80 text-white"
-                    }`}
+                      }`}
                   >
                     <div className="flex items-center gap-3">
                       <span className="text-[#c8a05c] text-base">📍</span>
@@ -798,11 +877,10 @@ export default function BookingForm({ category = "chauffeur" }) {
                   ? `Choose destination connected to ${pickup}...`
                   : "🔒 Select Pickup location first..."
               }
-              className={`w-full pl-11 pr-10 py-3.5 rounded-xl border text-sm outline-none transition-all ${
-                !pickup.trim()
+              className={`w-full pl-11 pr-10 py-3.5 rounded-xl border text-sm outline-none transition-all ${!pickup.trim()
                   ? "bg-zinc-950/40 border-white/5 text-zinc-500 cursor-not-allowed"
                   : "bg-black/60 border-white/15 focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 text-white placeholder-zinc-500"
-              }`}
+                }`}
             />
             {isLoadingDropoff ? (
               <div className="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none">
@@ -848,11 +926,10 @@ export default function BookingForm({ category = "chauffeur" }) {
                         handleSelectDropoff(placeObj);
                       }}
                       onClick={() => handleSelectDropoff(placeObj)}
-                      className={`w-full px-4 py-3 text-left transition-colors flex items-center justify-between group cursor-pointer ${
-                        isSelected
+                      className={`w-full px-4 py-3 text-left transition-colors flex items-center justify-between group cursor-pointer ${isSelected
                           ? "bg-emerald-950/50 text-emerald-300"
                           : "hover:bg-zinc-800/80 text-white"
-                      }`}
+                        }`}
                     >
                       <div className="flex items-center gap-3">
                         <span className="text-emerald-400 text-base">🏁</span>
@@ -932,35 +1009,578 @@ export default function BookingForm({ category = "chauffeur" }) {
 
         {/* Date & Time Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label
-              htmlFor="date-input"
-              className="block text-xs font-semibold uppercase tracking-wider text-zinc-300 mb-2"
+          {/* Pickup Date Picker */}
+          <div ref={dateContainerRef} className="relative">
+            <div className="flex items-center justify-between mb-2">
+              <label
+                htmlFor="date-picker-btn"
+                className="block text-xs font-semibold uppercase tracking-wider text-zinc-300"
+              >
+                Pickup Date <span className={isChauffeur ? "text-[#c8a05c]" : "text-amber-400"}>*</span>
+              </label>
+              <div className="flex items-center gap-1.5 text-[11px]">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPickupDate(todayStr);
+                    setCalendarViewDate(new Date());
+                  }}
+                  className={`px-2 py-0.5 rounded-md border text-xs transition-colors cursor-pointer ${pickupDate === todayStr
+                      ? isChauffeur
+                        ? "bg-[#c8a05c]/20 border-[#c8a05c] text-[#e8c683]"
+                        : "bg-amber-400/20 border-amber-400 text-amber-300"
+                      : "border-white/10 text-zinc-400 hover:text-white hover:border-white/20"
+                    }`}
+                >
+                  Today
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const tmrw = new Date(Date.now() + 86400000);
+                    const tmrwStr = `${tmrw.getFullYear()}-${String(tmrw.getMonth() + 1).padStart(2, "0")}-${String(tmrw.getDate()).padStart(2, "0")}`;
+                    setPickupDate(tmrwStr);
+                    setCalendarViewDate(tmrw);
+                  }}
+                  className="px-2 py-0.5 rounded-md border border-white/10 text-zinc-400 hover:text-white hover:border-white/20 text-xs transition-colors cursor-pointer"
+                >
+                  Tomorrow
+                </button>
+              </div>
+            </div>
+
+            {/* Clickable Display Trigger */}
+            <div
+              id="date-picker-btn"
+              role="button"
+              tabIndex={0}
+              onClick={() => {
+                setShowDatePicker((prev) => !prev);
+                setShowTimePicker(false);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  setShowDatePicker((prev) => !prev);
+                  setShowTimePicker(false);
+                }
+              }}
+              className={`w-full px-4 py-3.5 rounded-xl bg-black/60 border text-white text-sm outline-none transition-all flex items-center justify-between cursor-pointer group ${showDatePicker
+                  ? isChauffeur
+                    ? "border-[#c8a05c] ring-1 ring-[#c8a05c]"
+                    : "border-amber-400 ring-1 ring-amber-400"
+                  : "border-white/15 hover:border-white/30"
+                }`}
             >
-              Pickup Date
-            </label>
+              <div className="flex items-center gap-3 min-w-0">
+                <svg
+                  className={`w-4 h-4 shrink-0 ${isChauffeur ? "text-[#c8a05c]" : "text-amber-400"
+                    }`}
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                  />
+                </svg>
+                <span className="font-medium truncate">
+                  {formatDisplayDate(pickupDate)}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  title="Open calendar picker"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    nativeDateInputRef.current?.showPicker?.();
+                  }}
+                  className="p-1 rounded text-zinc-400 hover:text-white transition-colors cursor-pointer"
+                >
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            {/* Hidden Native Date Input for Accessibility & Direct Picker */}
             <input
-              id="date-input"
+              ref={nativeDateInputRef}
               type="date"
+              min={todayStr}
               value={pickupDate}
-              onChange={(e) => setPickupDate(e.target.value)}
-              className="w-full px-4 py-3.5 rounded-xl bg-black/60 border border-white/15 focus:border-[#c8a05c] focus:ring-1 focus:ring-[#c8a05c] text-white text-sm outline-none transition-all"
+              onChange={(e) => {
+                if (e.target.value) {
+                  setPickupDate(e.target.value);
+                  const [y, m, d] = e.target.value.split("-").map(Number);
+                  setCalendarViewDate(new Date(y, m - 1, d));
+                }
+              }}
+              style={{ colorScheme: "dark" }}
+              className="sr-only"
+              tabIndex={-1}
             />
+
+            {/* Custom Interactive Calendar Popover */}
+            {showDatePicker && (
+              <div className="absolute z-40 top-full left-0 mt-2 w-full sm:w-[320px] bg-zinc-950/95 backdrop-blur-2xl border border-white/20 rounded-2xl p-4 shadow-[0_15px_50px_rgba(0,0,0,0.85)] animate-in fade-in zoom-in-95 duration-150">
+                {/* Month & Year Navigation Header */}
+                <div className="flex items-center justify-between mb-3 pb-2 border-b border-white/10">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCalendarViewDate(
+                        (prev) =>
+                          new Date(
+                            prev.getFullYear(),
+                            prev.getMonth() - 1,
+                            1,
+                          ),
+                      );
+                    }}
+                    className="p-1.5 rounded-lg hover:bg-white/10 text-zinc-300 hover:text-white transition-colors cursor-pointer text-sm"
+                  >
+                    ‹
+                  </button>
+                  <span className="font-semibold text-xs text-white uppercase tracking-wider">
+                    {calendarViewDate.toLocaleDateString("en-AU", {
+                      month: "long",
+                      year: "numeric",
+                    })}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCalendarViewDate(
+                        (prev) =>
+                          new Date(
+                            prev.getFullYear(),
+                            prev.getMonth() + 1,
+                            1,
+                          ),
+                      );
+                    }}
+                    className="p-1.5 rounded-lg hover:bg-white/10 text-zinc-300 hover:text-white transition-colors cursor-pointer text-sm"
+                  >
+                    ›
+                  </button>
+                </div>
+
+                {/* Day of Week Labels */}
+                <div className="grid grid-cols-7 gap-1 text-center text-[10px] uppercase font-bold text-zinc-500 mb-1">
+                  {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((day) => (
+                    <div key={day} className="py-1">
+                      {day}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Days Grid */}
+                <div className="grid grid-cols-7 gap-1">
+                  {/* Empty slots before first day */}
+                  {Array.from({
+                    length: new Date(
+                      calendarViewDate.getFullYear(),
+                      calendarViewDate.getMonth(),
+                      1,
+                    ).getDay(),
+                  }).map((_, idx) => (
+                    <div key={`empty-${idx}`} />
+                  ))}
+
+                  {/* Days of month */}
+                  {Array.from({
+                    length: new Date(
+                      calendarViewDate.getFullYear(),
+                      calendarViewDate.getMonth() + 1,
+                      0,
+                    ).getDate(),
+                  }).map((_, idx) => {
+                    const dayNum = idx + 1;
+                    const dateStr = `${calendarViewDate.getFullYear()}-${String(
+                      calendarViewDate.getMonth() + 1,
+                    ).padStart(2, "0")}-${String(dayNum).padStart(2, "0")}`;
+                    const isPast = dateStr < todayStr;
+                    const isSelected = dateStr === pickupDate;
+                    const isToday = dateStr === todayStr;
+
+                    return (
+                      <button
+                        key={dateStr}
+                        type="button"
+                        disabled={isPast}
+                        onClick={() => {
+                          setPickupDate(dateStr);
+                          setShowDatePicker(false);
+                        }}
+                        className={`h-8 w-8 text-xs rounded-lg flex items-center justify-center transition-all cursor-pointer ${isSelected
+                            ? isChauffeur
+                              ? "bg-[#c8a05c] text-black font-bold shadow-md shadow-[#c8a05c]/40"
+                              : "bg-amber-400 text-black font-bold shadow-md shadow-amber-400/40"
+                            : isPast
+                              ? "text-zinc-600 cursor-not-allowed opacity-30"
+                              : "text-zinc-200 hover:bg-white/10 hover:text-white"
+                          } ${isToday && !isSelected ? "border border-[#c8a05c]/60 font-semibold text-[#e8c683]" : ""}`}
+                      >
+                        {dayNum}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="mt-3 pt-2.5 border-t border-white/10 flex items-center justify-between text-[11px]">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPickupDate(todayStr);
+                      setCalendarViewDate(new Date());
+                      setShowDatePicker(false);
+                    }}
+                    className="text-[#c8a05c] hover:underline font-medium cursor-pointer"
+                  >
+                    Select Today
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      nativeDateInputRef.current?.showPicker?.();
+                    }}
+                    className="text-zinc-400 hover:text-white transition-colors cursor-pointer"
+                  >
+                    Calendar Dialog ↗
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
-          <div>
-            <label
-              htmlFor="time-input"
-              className="block text-xs font-semibold uppercase tracking-wider text-zinc-300 mb-2"
-            >
-              Pickup Time
-            </label>
+
+          {/* Pickup Time Picker */}
+          <div ref={timeContainerRef} className="relative">
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-300">
+                Pickup Time <span className={isChauffeur ? "text-[#c8a05c]" : "text-amber-400"}>*</span>
+              </label>
+              <div className="flex items-center gap-1.5 text-[11px]">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const now = new Date();
+                    setPickupTime(
+                      `${String(now.getHours()).padStart(2, "0")}:${String(
+                        now.getMinutes(),
+                      ).padStart(2, "0")}`,
+                    );
+                  }}
+                  className="px-2 py-0.5 rounded-md border border-white/10 text-zinc-400 hover:text-white hover:border-white/20 text-xs transition-colors cursor-pointer"
+                >
+                  Now
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const d = new Date();
+                    d.setHours(d.getHours() + 1);
+                    setPickupTime(
+                      `${String(d.getHours()).padStart(2, "0")}:00`,
+                    );
+                  }}
+                  className="px-2 py-0.5 rounded-md border border-white/10 text-zinc-400 hover:text-white hover:border-white/20 text-xs transition-colors cursor-pointer"
+                >
+                  +1h
+                </button>
+              </div>
+            </div>
+
+            {/* Separately Selectable Hour, Minutes, AM/PM Controls */}
+            <div className="grid grid-cols-12 gap-2">
+              {/* Hour Dropdown */}
+              <div className="col-span-4 relative">
+                <select
+                  id="pickup-hour-select"
+                  aria-label="Select Pickup Hour"
+                  value={parseTime(pickupTime).h12}
+                  onChange={(e) => {
+                    const { minute, period } = parseTime(pickupTime);
+                    setPickupTime(composeTime(Number(e.target.value), minute, period));
+                  }}
+                  className={`w-full py-3.5 px-3 rounded-xl bg-black/60 border text-white text-sm outline-none font-medium transition-all text-center cursor-pointer appearance-none ${
+                    isChauffeur
+                      ? "border-white/15 focus:border-[#c8a05c] focus:ring-1 focus:ring-[#c8a05c]"
+                      : "border-white/15 focus:border-amber-400 focus:ring-1 focus:ring-amber-400"
+                  }`}
+                >
+                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((h) => (
+                    <option key={h} value={h} className="bg-zinc-900 text-white">
+                      {String(h).padStart(2, "0")} hr
+                    </option>
+                  ))}
+                </select>
+                <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none text-xs">
+                  ▾
+                </span>
+              </div>
+
+              {/* Minutes Dropdown */}
+              <div className="col-span-4 relative">
+                <select
+                  id="pickup-minute-select"
+                  aria-label="Select Pickup Minute"
+                  value={parseTime(pickupTime).minuteStr}
+                  onChange={(e) => {
+                    const { h12, period } = parseTime(pickupTime);
+                    setPickupTime(composeTime(h12, Number(e.target.value), period));
+                  }}
+                  className={`w-full py-3.5 px-3 rounded-xl bg-black/60 border text-white text-sm outline-none font-medium transition-all text-center cursor-pointer appearance-none ${
+                    isChauffeur
+                      ? "border-white/15 focus:border-[#c8a05c] focus:ring-1 focus:ring-[#c8a05c]"
+                      : "border-white/15 focus:border-amber-400 focus:ring-1 focus:ring-amber-400"
+                  }`}
+                >
+                  {[
+                    "00", "05", "10", "15", "20", "25",
+                    "30", "35", "40", "45", "50", "55",
+                  ].map((m) => (
+                    <option key={m} value={m} className="bg-zinc-900 text-white">
+                      :{m} min
+                    </option>
+                  ))}
+                </select>
+                <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none text-xs">
+                  ▾
+                </span>
+              </div>
+
+              {/* AM / PM Segmented Buttons */}
+              <div className="col-span-4 flex rounded-xl border border-white/15 bg-black/60 p-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const { h12, minute } = parseTime(pickupTime);
+                    setPickupTime(composeTime(h12, minute, "AM"));
+                  }}
+                  className={`flex-1 rounded-lg text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
+                    parseTime(pickupTime).period === "AM"
+                      ? isChauffeur
+                        ? "bg-[#c8a05c] text-black shadow-md shadow-[#c8a05c]/30"
+                        : "bg-amber-400 text-black shadow-md shadow-amber-400/30"
+                      : "text-zinc-400 hover:text-white"
+                  }`}
+                >
+                  AM
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const { h12, minute } = parseTime(pickupTime);
+                    setPickupTime(composeTime(h12, minute, "PM"));
+                  }}
+                  className={`flex-1 rounded-lg text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
+                    parseTime(pickupTime).period === "PM"
+                      ? isChauffeur
+                        ? "bg-[#c8a05c] text-black shadow-md shadow-[#c8a05c]/30"
+                        : "bg-amber-400 text-black shadow-md shadow-amber-400/30"
+                      : "text-zinc-400 hover:text-white"
+                  }`}
+                >
+                  PM
+                </button>
+              </div>
+            </div>
+
+            {/* Time Summary & Modal Opener Bar */}
+            <div className="mt-2 flex items-center justify-between text-xs text-zinc-400 px-1">
+              <span className="flex items-center gap-1.5">
+                <svg
+                  className={`w-3.5 h-3.5 ${isChauffeur ? "text-[#c8a05c]" : "text-amber-400"}`}
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+                <span>
+                  Selected: <strong className="text-white font-mono">{formatDisplayTime(pickupTime)}</strong> ({pickupTime})
+                </span>
+              </span>
+              <button
+                type="button"
+                onClick={() => setShowTimePicker((prev) => !prev)}
+                className={`hover:underline cursor-pointer transition-colors text-[11px] font-medium ${
+                  isChauffeur ? "text-[#e8c683]" : "text-amber-300"
+                }`}
+              >
+                {showTimePicker ? "Hide grid ▴" : "Time grid ▾"}
+              </button>
+            </div>
+
+            {/* Hidden Native Time Input for Accessibility */}
             <input
-              id="time-input"
+              ref={nativeTimeInputRef}
               type="time"
               value={pickupTime}
-              onChange={(e) => setPickupTime(e.target.value)}
-              className="w-full px-4 py-3.5 rounded-xl bg-black/60 border border-white/15 focus:border-[#c8a05c] focus:ring-1 focus:ring-[#c8a05c] text-white text-sm outline-none transition-all"
+              onChange={(e) => {
+                if (e.target.value) setPickupTime(e.target.value);
+              }}
+              style={{ colorScheme: "dark" }}
+              className="sr-only"
+              tabIndex={-1}
             />
+
+            {/* Expanded Interactive Popover with 3 Columns: Hour, Minute, AM/PM */}
+            {showTimePicker && (
+              <div className="absolute z-40 top-full left-0 sm:left-auto sm:right-0 mt-2 w-full sm:w-[340px] bg-zinc-950/95 backdrop-blur-2xl border border-white/20 rounded-2xl p-4 shadow-[0_15px_50px_rgba(0,0,0,0.85)] animate-in fade-in zoom-in-95 duration-150">
+                <div className="flex items-center justify-between pb-2 mb-3 border-b border-white/10">
+                  <span className="font-semibold text-xs text-white uppercase tracking-wider">
+                    Pick Hour • Minute • AM/PM
+                  </span>
+                  <span className="text-xs font-mono font-bold text-[#c8a05c]">
+                    {formatDisplayTime(pickupTime)}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2">
+                  {/* Hours column */}
+                  <div>
+                    <span className="block text-[10px] uppercase font-bold text-zinc-400 text-center mb-1.5">
+                      Hour
+                    </span>
+                    <div className="max-h-44 overflow-y-auto pr-1 space-y-1 custom-scrollbar">
+                      {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((h) => {
+                        const isSelected = parseTime(pickupTime).h12 === h;
+                        return (
+                          <button
+                            key={h}
+                            type="button"
+                            onClick={() => {
+                              const { minute, period } = parseTime(pickupTime);
+                              setPickupTime(composeTime(h, minute, period));
+                            }}
+                            className={`w-full py-1.5 rounded-lg text-xs font-medium text-center transition-colors cursor-pointer ${
+                              isSelected
+                                ? isChauffeur
+                                  ? "bg-[#c8a05c] text-black font-bold shadow-sm"
+                                  : "bg-amber-400 text-black font-bold shadow-sm"
+                                : "text-zinc-300 hover:bg-white/10 hover:text-white"
+                            }`}
+                          >
+                            {String(h).padStart(2, "0")}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Minutes column */}
+                  <div>
+                    <span className="block text-[10px] uppercase font-bold text-zinc-400 text-center mb-1.5">
+                      Minute
+                    </span>
+                    <div className="max-h-44 overflow-y-auto pr-1 space-y-1 custom-scrollbar">
+                      {[
+                        "00", "05", "10", "15", "20", "25",
+                        "30", "35", "40", "45", "50", "55",
+                      ].map((m) => {
+                        const isSelected = parseTime(pickupTime).minuteStr === m;
+                        return (
+                          <button
+                            key={m}
+                            type="button"
+                            onClick={() => {
+                              const { h12, period } = parseTime(pickupTime);
+                              setPickupTime(composeTime(h12, Number(m), period));
+                            }}
+                            className={`w-full py-1.5 rounded-lg text-xs font-medium text-center transition-colors cursor-pointer ${
+                              isSelected
+                                ? isChauffeur
+                                  ? "bg-[#c8a05c] text-black font-bold shadow-sm"
+                                  : "bg-amber-400 text-black font-bold shadow-sm"
+                                : "text-zinc-300 hover:bg-white/10 hover:text-white"
+                            }`}
+                          >
+                            :{m}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* AM / PM column */}
+                  <div>
+                    <span className="block text-[10px] uppercase font-bold text-zinc-400 text-center mb-1.5">
+                      Period
+                    </span>
+                    <div className="space-y-2 pt-1">
+                      {["AM", "PM"].map((p) => {
+                        const isSelected = parseTime(pickupTime).period === p;
+                        return (
+                          <button
+                            key={p}
+                            type="button"
+                            onClick={() => {
+                              const { h12, minute } = parseTime(pickupTime);
+                              setPickupTime(composeTime(h12, minute, p));
+                            }}
+                            className={`w-full py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer ${
+                              isSelected
+                                ? isChauffeur
+                                  ? "bg-[#c8a05c] text-black font-bold shadow-md shadow-[#c8a05c]/30"
+                                  : "bg-amber-400 text-black font-bold shadow-md shadow-amber-400/30"
+                                : "border border-white/15 text-zinc-400 hover:text-white hover:border-white/30"
+                            }`}
+                          >
+                            {p}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-3 pt-2.5 border-t border-white/10 flex items-center justify-between text-[11px]">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const now = new Date();
+                      setPickupTime(
+                        `${String(now.getHours()).padStart(2, "0")}:${String(
+                          now.getMinutes(),
+                        ).padStart(2, "0")}`,
+                      );
+                      setShowTimePicker(false);
+                    }}
+                    className="text-[#c8a05c] hover:underline font-medium cursor-pointer"
+                  >
+                    Set to Current Time
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowTimePicker(false)}
+                    className="px-3 py-1 rounded-md bg-white/10 hover:bg-white/20 text-white font-semibold transition-colors cursor-pointer"
+                  >
+                    Done ✓
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -1072,11 +1692,13 @@ export default function BookingForm({ category = "chauffeur" }) {
               htmlFor="email-input"
               className="block text-xs font-medium text-zinc-300 mb-1"
             >
-              Email Address (For Confirmation Receipt)
+              Email Address (For Confirmation Receipt){" "}
+              <span className={isChauffeur ? "text-[#c8a05c]" : "text-amber-400"}>*</span>
             </label>
             <input
               id="email-input"
               type="email"
+              required
               value={passengerEmail}
               onChange={(e) => setPassengerEmail(e.target.value)}
               placeholder="e.g. john.doe@example.com"
@@ -1096,11 +1718,10 @@ export default function BookingForm({ category = "chauffeur" }) {
           <button
             type="submit"
             disabled={isSubmitting}
-            className={`w-full sm:flex-1 py-4 px-8 rounded-xl font-bold uppercase tracking-wider text-sm text-black shadow-xl transition-all transform active:scale-95 cursor-pointer ${
-              isChauffeur
+            className={`w-full sm:flex-1 py-4 px-8 rounded-xl font-bold uppercase tracking-wider text-sm text-black shadow-xl transition-all transform active:scale-95 cursor-pointer ${isChauffeur
                 ? "bg-gradient-to-r from-[#c8a05c] to-[#e4bf7e] hover:from-[#d6af70] hover:to-[#eed095] hover:shadow-[0_0_25px_rgba(200,160,92,0.4)]"
                 : "bg-gradient-to-r from-amber-400 to-amber-300 hover:from-amber-300 hover:to-amber-200 hover:shadow-[0_0_25px_rgba(251,191,36,0.4)]"
-            }`}
+              }`}
           >
             {isSubmitting
               ? "Confirming Booking..."
