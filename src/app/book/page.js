@@ -9,7 +9,6 @@ import { useGSAP } from "@gsap/react";
 export default function BookPage() {
   const router = useRouter();
   const [selectedCategory, setSelectedCategory] = useState("chauffeur");
-  const [isNavigating, setIsNavigating] = useState(false);
   const pageContainerRef = useRef(null);
 
   useGSAP(
@@ -36,7 +35,7 @@ export default function BookPage() {
           "-=0.6",
         );
 
-      // Category Cards & CTA button reveal
+      // Category Cards reveal
       mm.add("(min-width: 768px)", () => {
         tl.fromTo(
           ".category-card",
@@ -50,17 +49,6 @@ export default function BookPage() {
             ease: "power2.out",
           },
           "-=0.4",
-        ).fromTo(
-          ".book-cta-container",
-          { y: 25, opacity: 0, scale: 0.95 },
-          {
-            y: 0,
-            opacity: 1,
-            scale: 1,
-            duration: 0.7,
-            ease: "back.out(1.5)",
-          },
-          "-=0.3",
         );
       });
 
@@ -76,16 +64,6 @@ export default function BookPage() {
             ease: "power2.out",
           },
           "-=0.4",
-        ).fromTo(
-          ".book-cta-container",
-          { y: 15, opacity: 0 },
-          {
-            y: 0,
-            opacity: 1,
-            duration: 0.6,
-            ease: "power2.out",
-          },
-          "-=0.3",
         );
       });
 
@@ -96,7 +74,6 @@ export default function BookPage() {
 
   const handleSelectCategory = (category) => {
     setSelectedCategory(category);
-    setIsNavigating(true);
     router.push(`/book/${category}`);
   };
 
@@ -388,27 +365,8 @@ export default function BookPage() {
         </button>
       </div>
 
-      {/* Continue Button */}
-      <div className="book-cta-container mt-10 sm:mt-12 flex flex-col items-center gap-3 w-full max-w-md">
-        <button
-          type="button"
-          onClick={() => handleSelectCategory(selectedCategory)}
-          disabled={isNavigating}
-          className={`w-full py-4 px-8 rounded-xl font-bold uppercase tracking-wider text-sm text-black shadow-xl transition-all transform active:scale-95 cursor-pointer ${
-            selectedCategory === "chauffeur"
-              ? "bg-gradient-to-r from-[#c8a05c] to-[#e4bf7e] hover:from-[#d6af70] hover:to-[#eed095] hover:shadow-[0_0_25px_rgba(200,160,92,0.4)]"
-              : "bg-gradient-to-r from-amber-400 to-amber-300 hover:from-amber-300 hover:to-amber-200 hover:shadow-[0_0_25px_rgba(251,191,36,0.4)]"
-          }`}
-        >
-          {isNavigating
-            ? "Redirecting..."
-            : `Continue with ${
-                selectedCategory === "chauffeur" ? "Chauffeur" : "Taxi"
-              } →`}
-        </button>
-        <span className="text-xs text-zinc-400">
-          Free cancellation up to 2 hours before pickup
-        </span>
+      <div className="mt-8 text-xs text-zinc-400 text-center">
+        Free cancellation up to 2 hours before pickup
       </div>
     </div>
   );
