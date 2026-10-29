@@ -83,14 +83,14 @@ export default function StripePaymentForm({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-3">
       {errorMessage && (
-        <div className="p-3 text-xs rounded-xl bg-red-500/15 border border-red-500/40 text-red-300">
+        <div className="p-2.5 text-xs rounded-xl bg-red-500/15 border border-red-500/40 text-red-300">
           {errorMessage}
         </div>
       )}
 
-      <div className="p-3.5 rounded-xl bg-black/30 border border-white/10 stripe-payment-element-box">
+      <div className="p-2.5 sm:p-3 rounded-xl bg-black/30 border border-white/10 stripe-payment-element-box">
         <PaymentElement
           options={{
             layout: "tabs",
@@ -98,7 +98,7 @@ export default function StripePaymentForm({
         />
       </div>
 
-      <div className="flex items-center gap-3 pt-2">
+      <div className="flex items-center gap-2.5 pt-1">
         {onCancel && (
           <button
             type="button"

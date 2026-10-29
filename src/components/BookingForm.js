@@ -394,6 +394,7 @@ export default function BookingForm({ category = "chauffeur" }) {
         dropoff: dropoff.trim(),
         pickupTime: new Date(`${pickupDate}T${pickupTime}`),
         passengers,
+        luggage,
         vehicleType: isChauffeur ? "Chauffeur" : "Taxi",
         passengerName: passengerName.trim(),
         passengerPhone: passengerPhone.trim(),
