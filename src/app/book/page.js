@@ -13,61 +13,37 @@ export default function BookPage() {
 
   useGSAP(
     () => {
-      const mm = gsap.matchMedia();
-      const tl = gsap.timeline({ defaults: { ease: "power3.out" } });
+      const tl = gsap.timeline({ defaults: { ease: "power2.out" } });
 
-      // Header step & titles animation
+      // Crisp, subtle entrance animation
       tl.fromTo(
         ".book-step-indicator",
-        { y: -15, opacity: 0 },
-        { y: 0, opacity: 1, duration: 0.6 },
+        { y: -6, opacity: 0 },
+        { y: 0, opacity: 1, duration: 0.25 },
       )
         .fromTo(
           ".book-title",
-          { y: 25, opacity: 0 },
-          { y: 0, opacity: 1, duration: 0.8 },
-          "-=0.4",
+          { y: 10, opacity: 0 },
+          { y: 0, opacity: 1, duration: 0.3 },
+          "-=0.15",
         )
         .fromTo(
           ".book-subtitle",
-          { y: 20, opacity: 0 },
-          { y: 0, opacity: 1, duration: 0.7 },
-          "-=0.6",
-        );
-
-      // Category Cards reveal
-      mm.add("(min-width: 768px)", () => {
-        tl.fromTo(
+          { y: 8, opacity: 0 },
+          { y: 0, opacity: 1, duration: 0.25 },
+          "-=0.2",
+        )
+        .fromTo(
           ".category-card",
-          { y: 40, opacity: 0, scale: 0.96 },
+          { y: 12, opacity: 0 },
           {
             y: 0,
             opacity: 1,
-            scale: 1,
-            stagger: 0.18,
-            duration: 0.85,
-            ease: "power2.out",
+            stagger: 0.06,
+            duration: 0.3,
           },
-          "-=0.4",
+          "-=0.15",
         );
-      });
-
-      mm.add("(max-width: 767px)", () => {
-        tl.fromTo(
-          ".category-card",
-          { y: 25, opacity: 0 },
-          {
-            y: 0,
-            opacity: 1,
-            stagger: 0.12,
-            duration: 0.7,
-            ease: "power2.out",
-          },
-          "-=0.4",
-        );
-      });
-
-      return () => mm.revert();
     },
     { scope: pageContainerRef },
   );
@@ -120,7 +96,9 @@ export default function BookPage() {
               src="/chauffeur-card.jpg"
               alt="Chauffeur Luxury Car"
               fill
-              className="object-cover object-center group-hover:scale-105 transition-transform duration-700"
+              priority
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 450px"
+              className="object-cover object-center group-hover:scale-[1.02] transition-transform duration-300"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/40 to-transparent" />
           </div>
@@ -242,7 +220,7 @@ export default function BookPage() {
           {/* Taxi Illustration/Graphic Container */}
           <div className="relative h-48 sm:h-56 w-full overflow-hidden bg-gradient-to-br from-zinc-800 to-zinc-950 flex items-center justify-center">
             <div className="relative z-10 flex flex-col items-center justify-center p-6 text-center">
-              <div className="w-16 h-16 rounded-2xl bg-amber-400/20 border border-amber-400/40 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-300">
+              <div className="w-16 h-16 rounded-2xl bg-amber-400/20 border border-amber-400/40 flex items-center justify-center mb-3 group-hover:scale-105 transition-transform duration-200">
                 <svg
                   className="w-9 h-9 text-amber-400"
                   viewBox="0 0 24 24"

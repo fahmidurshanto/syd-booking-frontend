@@ -223,6 +223,7 @@ export default function Home() {
             alt="Luxury chauffeur service in Australia"
             fill
             priority
+            sizes="100vw"
             className="object-cover object-center"
           />
         </div>
