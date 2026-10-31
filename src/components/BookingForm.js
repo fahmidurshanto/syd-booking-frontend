@@ -403,12 +403,6 @@ export default function BookingForm({ category = "chauffeur" }) {
           currency: calculatedFare?.currency || "AUD",
           total: calculatedFare?.total || (isChauffeur ? 95 : 75),
         },
-        notes: [
-          flightNumber ? `Flight #${flightNumber.trim()}` : "",
-          `Luggage: ${luggage} bags`,
-        ]
-          .filter(Boolean)
-          .join(" | "),
       };
 
       const res = await fetch(`${API_BASE}/bookings`, {
