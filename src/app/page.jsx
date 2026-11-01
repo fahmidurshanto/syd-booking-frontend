@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRef, useState } from "react";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
+import ChauffeursAtYourService from "@/components/ChauffeursAtYourService";
 
 export default function Home() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -213,26 +214,28 @@ export default function Home() {
   return (
     <div
       ref={containerRef}
-      className="relative min-h-screen w-full flex flex-col font-sans select-none overflow-x-hidden text-white"
+      className="relative min-h-screen w-full flex flex-col font-sans select-none overflow-x-hidden text-white bg-[#0b0c10]"
     >
-      {/* Background Hero Image with Dark Gradient Overlay */}
-      <div className="absolute inset-0 z-0 overflow-hidden">
-        <div className="hero-bg-img relative w-full h-full">
-          <Image
-            src="/hero-bg.jpg"
-            alt="Luxury chauffeur service in Australia"
-            fill
-            priority
-            sizes="100vw"
-            className="object-cover object-center"
-          />
+      {/* Hero Container with Background Hero Image */}
+      <div className="relative min-h-screen w-full flex flex-col justify-between overflow-hidden">
+        {/* Background Hero Image with Dark Gradient Overlay */}
+        <div className="absolute inset-0 z-0 overflow-hidden">
+          <div className="hero-bg-img relative w-full h-full">
+            <Image
+              src="/hero-bg.jpg"
+              alt="Luxury chauffeur service in Australia"
+              fill
+              priority
+              sizes="100vw"
+              className="object-cover object-center"
+            />
+          </div>
+          {/* Cinematic darken overlay to match the screenshot atmosphere */}
+          <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/60 to-black/35" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-black/70" />
         </div>
-        {/* Cinematic darken overlay to match the screenshot atmosphere */}
-        <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/60 to-black/35" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-black/70" />
-      </div>
 
-      {/* Header / Navigation Bar */}
+        {/* Header / Navigation Bar */}
       <header className="relative z-20 w-full">
         {/* Top bar (contact utility) */}
         <div className="top-bar-contact w-full border-b border-white/10 bg-black/20 backdrop-blur-sm">
@@ -432,6 +435,10 @@ export default function Home() {
           </div>
         </div>
       </main>
+      </div>
+
+      {/* "Chauffeurs At Your Service" Section below Hero */}
+      <ChauffeursAtYourService />
 
       {/* Floating Chat widget button in bottom right corner */}
       <div className="chat-widget fixed bottom-6 right-6 z-30">
