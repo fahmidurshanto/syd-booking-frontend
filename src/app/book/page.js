@@ -74,13 +74,11 @@ export default function BookPage() {
       {/* Category Selection Cards */}
       <div className="mt-10 sm:mt-12 grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 w-full max-w-4xl">
         {/* Card 1: Chauffeur Service */}
-        <button
-          type="button"
-          onClick={() => handleSelectCategory("chauffeur")}
-          className={`category-card group relative rounded-2xl overflow-hidden border transition-all duration-300 cursor-pointer text-left flex flex-col bg-zinc-900/60 backdrop-blur-md ${
+        <div
+          className={`category-card group relative rounded-2xl overflow-hidden border transition-all duration-300 text-left flex flex-col bg-zinc-900/60 backdrop-blur-md ${
             selectedCategory === "chauffeur"
               ? "border-[#c8a05c] shadow-[0_0_35px_rgba(200,160,92,0.25)] ring-2 ring-[#c8a05c]/50 scale-[1.01]"
-              : "border-white/10 hover:border-[#c8a05c]/60 hover:bg-zinc-900/80"
+              : "border-white/10 hover:border-[#c8a05c]/40 hover:bg-zinc-900/80"
           }`}
         >
           {/* Badge */}
@@ -122,67 +120,6 @@ export default function BookPage() {
                   Chauffeur Service
                 </h2>
               </div>
-
-              <p className="mt-3 text-xs sm:text-sm text-zinc-300 leading-relaxed">
-                First-class European sedans, SUVs, and luxury vans with
-                uniformed, dedicated chauffeurs. Complimentary flight tracking
-                &amp; meet &amp; greet inside the terminal.
-              </p>
-
-              {/* Features list */}
-              <ul className="mt-5 space-y-2 text-xs text-zinc-300">
-                <li className="flex items-center gap-2">
-                  <svg
-                    className="w-4 h-4 text-[#c8a05c] shrink-0"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    aria-hidden="true"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2.5"
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                  <span>Mercedes-Benz, BMW, Audi &amp; Genesis fleet</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <svg
-                    className="w-4 h-4 text-[#c8a05c] shrink-0"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    aria-hidden="true"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2.5"
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                  <span>60 mins complimentary airport wait time</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <svg
-                    className="w-4 h-4 text-[#c8a05c] shrink-0"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    aria-hidden="true"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2.5"
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                  <span>Fixed all-inclusive pricing with zero surge</span>
-                </li>
-              </ul>
             </div>
 
             <div className="mt-6 pt-4 border-t border-white/10 flex items-center justify-between text-xs w-full">
@@ -193,21 +130,23 @@ export default function BookPage() {
             </div>
 
             <div className="mt-4 pt-3 flex items-center justify-end w-full">
-              <span className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#e8c683] group-hover:translate-x-1 transition-transform">
-                Select Chauffeur →
-              </span>
+              <button
+                type="button"
+                onClick={() => handleSelectCategory("chauffeur")}
+                className="cursor-pointer inline-flex items-center justify-center px-5 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider border border-[#c8a05c]/50 text-[#e8c683] bg-zinc-950/40 hover:bg-[#c8a05c] hover:text-black hover:border-[#c8a05c] hover:shadow-[0_0_20px_rgba(200,160,92,0.4)] active:scale-95 transition-all duration-300"
+              >
+                Book Chauffeur
+              </button>
             </div>
           </div>
-        </button>
+        </div>
 
         {/* Card 2: Taxi Service */}
-        <button
-          type="button"
-          onClick={() => handleSelectCategory("taxi")}
-          className={`category-card group relative rounded-2xl overflow-hidden border transition-all duration-300 cursor-pointer text-left flex flex-col bg-zinc-900/60 backdrop-blur-md ${
+        <div
+          className={`category-card group relative rounded-2xl overflow-hidden border transition-all duration-300 text-left flex flex-col bg-zinc-900/60 backdrop-blur-md ${
             selectedCategory === "taxi"
               ? "border-amber-400 shadow-[0_0_35px_rgba(251,191,36,0.25)] ring-2 ring-amber-400/50 scale-[1.01]"
-              : "border-white/10 hover:border-amber-400/60 hover:bg-zinc-900/80"
+              : "border-white/10 hover:border-amber-400/40 hover:bg-zinc-900/80"
           }`}
         >
           {/* Badge */}
@@ -217,31 +156,15 @@ export default function BookPage() {
             </span>
           </div>
 
-          {/* Taxi Illustration/Graphic Container */}
-          <div className="relative h-48 sm:h-56 w-full overflow-hidden bg-gradient-to-br from-zinc-800 to-zinc-950 flex items-center justify-center">
-            <div className="relative z-10 flex flex-col items-center justify-center p-6 text-center">
-              <div className="w-16 h-16 rounded-2xl bg-amber-400/20 border border-amber-400/40 flex items-center justify-center mb-3 group-hover:scale-105 transition-transform duration-200">
-                <svg
-                  className="w-9 h-9 text-amber-400"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
-                >
-                  <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.5 2.8C2.1 10.7 2 11.3 2 12v4c0 .6.4 1 1 1h2" />
-                  <circle cx="7" cy="17" r="2" />
-                  <path d="M9 17h6" />
-                  <circle cx="17" cy="17" r="2" />
-                  <path d="M9 5h6v2H9z" />
-                </svg>
-              </div>
-              <span className="text-xs font-semibold text-amber-300 uppercase tracking-widest">
-                Standard &amp; Maxi Taxi
-              </span>
-            </div>
+          {/* Taxi Image Container */}
+          <div className="relative h-48 sm:h-56 w-full overflow-hidden">
+            <Image
+              src="/taxi-card.jpg"
+              alt="Sydney Taxi and Maxi Taxi Service"
+              fill
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 450px"
+              className="object-cover object-center group-hover:scale-[1.02] transition-transform duration-300"
+            />
             <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/40 to-transparent" />
           </div>
 
@@ -264,67 +187,6 @@ export default function BookPage() {
                   Taxi Service
                 </h2>
               </div>
-
-              <p className="mt-3 text-xs sm:text-sm text-zinc-300 leading-relaxed">
-                Convenient airport pickup and drop-off with reliable licensed
-                taxis. Available for immediate dispatch or pre-scheduled rides
-                across greater Sydney.
-              </p>
-
-              {/* Features list */}
-              <ul className="mt-5 space-y-2 text-xs text-zinc-300">
-                <li className="flex items-center gap-2">
-                  <svg
-                    className="w-4 h-4 text-amber-400 shrink-0"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    aria-hidden="true"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2.5"
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                  <span>Sedans, Station Wagons &amp; Maxi Cabs</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <svg
-                    className="w-4 h-4 text-amber-400 shrink-0"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    aria-hidden="true"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2.5"
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                  <span>Standard metered rate or upfront estimate</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <svg
-                    className="w-4 h-4 text-amber-400 shrink-0"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    aria-hidden="true"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2.5"
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                  <span>Direct terminal curb pick-up &amp; drop-off</span>
-                </li>
-              </ul>
             </div>
 
             <div className="mt-6 pt-4 border-t border-white/10 flex items-center justify-between text-xs w-full">
@@ -335,12 +197,16 @@ export default function BookPage() {
             </div>
 
             <div className="mt-4 pt-3 flex items-center justify-end w-full">
-              <span className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-amber-300 group-hover:translate-x-1 transition-transform">
-                Select Taxi →
-              </span>
+              <button
+                type="button"
+                onClick={() => handleSelectCategory("taxi")}
+                className="cursor-pointer inline-flex items-center justify-center px-5 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider border border-amber-400/50 text-amber-300 bg-zinc-950/40 hover:bg-amber-400 hover:text-black hover:border-amber-400 hover:shadow-[0_0_20px_rgba(251,191,36,0.4)] active:scale-95 transition-all duration-300"
+              >
+                Book Taxi
+              </button>
             </div>
           </div>
-        </button>
+        </div>
       </div>
 
       <div className="mt-8 text-xs text-zinc-400 text-center">
