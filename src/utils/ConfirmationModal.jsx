@@ -135,11 +135,10 @@ export default function ConfirmationModal({
         <div className="flex items-center justify-between px-5 sm:px-7 py-3.5 border-b border-white/10 shrink-0 bg-zinc-900/95">
           <div className="flex items-center gap-3">
             <div
-              className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm shrink-0 ${
-                paymentCompleted
-                  ? "bg-emerald-500/20 border border-emerald-500 text-emerald-400"
-                  : "bg-[#c8a05c]/20 border border-[#c8a05c] text-[#c8a05c]"
-              }`}
+              className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm shrink-0 ${paymentCompleted
+                ? "bg-emerald-500/20 border border-emerald-500 text-emerald-400"
+                : "bg-[#c8a05c]/20 border border-[#c8a05c] text-[#c8a05c]"
+                }`}
             >
               ✓
             </div>
@@ -174,7 +173,7 @@ export default function ConfirmationModal({
         {/* Modal Body: Left column (details) & Right column (card / payment) */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 text-zinc-300">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-5 lg:gap-6 items-start">
-            
+
             {/* LEFT COLUMN: Passenger and Bookings Details */}
             <div className="md:col-span-6 flex flex-col space-y-3.5 bg-black/30 p-4 sm:p-5 rounded-xl border border-white/10">
               <div className="flex items-center justify-between border-b border-white/10 pb-2.5">

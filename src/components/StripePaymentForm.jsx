@@ -75,7 +75,7 @@ export default function StripePaymentForm({
     } catch (err) {
       setErrorMessage(
         err.message ||
-          "An unexpected error occurred during payment processing.",
+        "An unexpected error occurred during payment processing.",
       );
     } finally {
       setIsProcessing(false);

@@ -86,7 +86,7 @@ export default function BookingForm({ category = "chauffeur" }) {
           setPickupSuggestions(data.places);
         }
       })
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => {
         if (isMounted) setIsLoadingPickup(false);
       });
@@ -560,11 +560,10 @@ export default function BookingForm({ category = "chauffeur" }) {
           <button
             type="submit"
             disabled={isSubmitting}
-            className={`w-full sm:flex-1 py-4 px-8 rounded-xl font-bold uppercase tracking-wider text-sm text-black shadow-xl transition-all transform active:scale-95 cursor-pointer ${
-              isChauffeur
-                ? "bg-gradient-to-r from-[#c8a05c] to-[#e4bf7e] hover:from-[#d6af70] hover:to-[#eed095] hover:shadow-[0_0_25px_rgba(200,160,92,0.4)]"
-                : "bg-gradient-to-r from-amber-400 to-amber-300 hover:from-amber-300 hover:to-amber-200 hover:shadow-[0_0_25px_rgba(251,191,36,0.4)]"
-            }`}
+            className={`w-full sm:flex-1 py-4 px-8 rounded-xl font-bold uppercase tracking-wider text-sm text-black shadow-xl transition-all transform active:scale-95 cursor-pointer ${isChauffeur
+              ? "bg-gradient-to-r from-[#c8a05c] to-[#e4bf7e] hover:from-[#d6af70] hover:to-[#eed095] hover:shadow-[0_0_25px_rgba(200,160,92,0.4)]"
+              : "bg-gradient-to-r from-amber-400 to-amber-300 hover:from-amber-300 hover:to-amber-200 hover:shadow-[0_0_25px_rgba(251,191,36,0.4)]"
+              }`}
           >
             {isSubmitting
               ? "Confirming Booking..."

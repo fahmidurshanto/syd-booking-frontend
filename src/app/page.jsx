@@ -278,16 +278,16 @@ export default function Home() {
 
           {/* Desktop Navigation Links */}
           <nav className="hidden lg:flex items-center gap-8 text-sm font-medium text-zinc-200">
-            <a href="#about-us" className="hover:text-white transition-colors">
+            <Link href="/about-us" className="hover:text-white transition-colors">
               About Us
-            </a>
+            </Link>
 
-            <a
-              href="#contact-us"
+            <Link
+              href="/contact-us"
               className="hover:text-white transition-colors"
             >
               Contact Us
-            </a>
+            </Link>
 
             {/* Book Now outlined pill button */}
             <Link
@@ -337,20 +337,20 @@ export default function Home() {
           style={{ display: "none" }}
           className="lg:hidden bg-zinc-950/95 backdrop-blur-md border-b border-white/10 px-6 py-5 space-y-4 overflow-hidden"
         >
-          <a
-            href="#about-us"
+          <Link
+            href="/about-us"
             onClick={() => closeMobileMenu()}
             className="mobile-menu-item block text-base font-medium text-zinc-200 hover:text-white py-1 transition-colors"
           >
             About Us
-          </a>
-          <a
-            href="#contact-us"
+          </Link>
+          <Link
+            href="/contact-us"
             onClick={() => closeMobileMenu()}
             className="mobile-menu-item block text-base font-medium text-zinc-200 hover:text-white py-1 transition-colors"
           >
             Contact Us
-          </a>
+          </Link>
           <div className="mobile-menu-item pt-2">
             <Link
               href="/book"
