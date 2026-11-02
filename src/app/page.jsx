@@ -11,6 +11,9 @@ import ProfessionalChauffeurs from "@/components/ProfessionalChauffeurs";
 import FaqSection from "@/components/FaqSection";
 import Footer from "@/components/Footer";
 
+const ADMIN_URL = process.env.NEXT_PUBLIC_ADMIN_URL || "http://localhost:3001";
+const ADMIN_LOGIN_URL = `${ADMIN_URL.replace(/\/+$/, "")}/login`;
+
 export default function Home() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const containerRef = useRef(null);
@@ -294,7 +297,7 @@ export default function Home() {
 
             {/* Sign In Golden Button */}
             <Link
-              href="http://localhost:3001/login"
+              href={ADMIN_LOGIN_URL}
               className="px-5 py-2 rounded bg-[#c59e5f] hover:bg-[#d6af70] text-[#1a140b] text-xs font-bold tracking-wider uppercase transition-all duration-300 hover:scale-[1.02] active:scale-95 shadow-md shadow-[#c8a05c]/20"
             >
               Sign In
@@ -363,7 +366,7 @@ export default function Home() {
               Book Now
             </Link>
             <Link
-              href="http://localhost:3001/login"
+              href={ADMIN_LOGIN_URL}
               onClick={() => closeMobileMenu()}
               className="block text-center w-full py-3 rounded-lg border border-[#c8a05c] bg-gradient-to-r from-[#c59e5f] to-[#e4bf7e] text-black font-bold text-sm tracking-wider uppercase shadow-lg shadow-[#c8a05c]/10"
             >
