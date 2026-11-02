@@ -291,6 +291,14 @@ export default function Home() {
             >
               Book Now
             </Link>
+
+            {/* Sign In Golden Button */}
+            <Link
+              href="http://localhost:3001/login"
+              className="px-5 py-2 rounded bg-[#c59e5f] hover:bg-[#d6af70] text-[#1a140b] text-xs font-bold tracking-wider uppercase transition-all duration-300 hover:scale-[1.02] active:scale-95 shadow-md shadow-[#c8a05c]/20"
+            >
+              Sign In
+            </Link>
           </nav>
 
           {/* Mobile hamburger button */}
@@ -346,13 +354,20 @@ export default function Home() {
           >
             Contact Us
           </Link>
-          <div className="mobile-menu-item pt-2">
+          <div className="mobile-menu-item pt-2 space-y-2">
             <Link
               href="/book"
               onClick={() => closeMobileMenu()}
-              className="block text-center w-full py-3 rounded-lg border border-[#c8a05c] bg-gradient-to-r from-[#c59e5f] to-[#e4bf7e] text-black font-bold text-sm tracking-wider uppercase shadow-lg shadow-[#c8a05c]/10"
+              className="block text-center w-full py-3 rounded-lg border border-white/40 text-white font-bold text-sm tracking-wider uppercase transition-colors hover:bg-white/10"
             >
               Book Now
+            </Link>
+            <Link
+              href="http://localhost:3001/login"
+              onClick={() => closeMobileMenu()}
+              className="block text-center w-full py-3 rounded-lg border border-[#c8a05c] bg-gradient-to-r from-[#c59e5f] to-[#e4bf7e] text-black font-bold text-sm tracking-wider uppercase shadow-lg shadow-[#c8a05c]/10"
+            >
+              Sign In
             </Link>
           </div>
         </div>
