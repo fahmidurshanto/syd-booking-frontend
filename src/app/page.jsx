@@ -7,6 +7,9 @@ import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 import ChauffeursAtYourService from "@/components/ChauffeursAtYourService";
 import ServicesCarousel from "@/components/ServicesCarousel";
+import ProfessionalChauffeurs from "@/components/ProfessionalChauffeurs";
+import FaqSection from "@/components/FaqSection";
+import Footer from "@/components/Footer";
 
 export default function Home() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -158,12 +161,6 @@ export default function Home() {
             { y: 35, opacity: 0 },
             { y: 0, opacity: 1, stagger: 0.14, duration: 0.8 },
             "-=0.4",
-          )
-          .fromTo(
-            ".chat-widget",
-            { scale: 0, opacity: 0 },
-            { scale: 1, opacity: 1, duration: 0.6, ease: "back.out(2)" },
-            "-=0.2",
           );
       });
 
@@ -198,12 +195,6 @@ export default function Home() {
             { y: 20, opacity: 0 },
             { y: 0, opacity: 1, stagger: 0.1, duration: 0.6 },
             "-=0.3",
-          )
-          .fromTo(
-            ".chat-widget",
-            { scale: 0, opacity: 0 },
-            { scale: 1, opacity: 1, duration: 0.5, ease: "back.out(2)" },
-            "-=0.2",
           );
       });
 
@@ -444,29 +435,14 @@ export default function Home() {
       {/* "Moving You In Comfort And Style" Services Carousel */}
       <ServicesCarousel />
 
-      {/* Floating Chat widget button in bottom right corner */}
-      <div className="chat-widget fixed bottom-6 right-6 z-30">
-        <button
-          type="button"
-          aria-label="Open chat support"
-          className="w-12 h-12 rounded-full bg-[#1e2a4a]/90 hover:bg-[#25355e] text-white flex items-center justify-center shadow-2xl border border-white/20 transition-all hover:scale-105 active:scale-95"
-        >
-          <svg
-            className="w-6 h-6"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            aria-hidden="true"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-            />
-          </svg>
-        </button>
-      </div>
+      {/* "Your Private Chauffeur: Professional, Experienced, Courteous And Discreet" */}
+      <ProfessionalChauffeurs />
+
+      {/* Frequently Asked Questions (FAQ) Section */}
+      <FaqSection />
+
+      {/* Luxury Footer */}
+      <Footer />
     </div>
   );
 }
