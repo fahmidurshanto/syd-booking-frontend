@@ -6,6 +6,7 @@ import { useRef, useState } from "react";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 import ChauffeursAtYourService from "@/components/ChauffeursAtYourService";
+import ServicesCarousel from "@/components/ServicesCarousel";
 
 export default function Home() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -439,6 +440,9 @@ export default function Home() {
 
       {/* "Chauffeurs At Your Service" Section below Hero */}
       <ChauffeursAtYourService />
+
+      {/* "Moving You In Comfort And Style" Services Carousel */}
+      <ServicesCarousel />
 
       {/* Floating Chat widget button in bottom right corner */}
       <div className="chat-widget fixed bottom-6 right-6 z-30">
