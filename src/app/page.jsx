@@ -166,9 +166,35 @@ export default function Home() {
             {/* BOOK NOW gold button */}
             <Link
               href="/book"
-              className="hero-cta-btn px-8 py-3.5 text-xs sm:text-sm font-bold tracking-wider uppercase rounded bg-[#c59e5f] hover:bg-[#d6af70] text-[#1a140b] shadow-lg transition-transform active:scale-95"
+              className="hero-cta-btn px-7 sm:px-8 py-3.5 text-xs sm:text-sm font-bold tracking-wider uppercase rounded bg-[#c59e5f] hover:bg-[#d6af70] text-[#1a140b] shadow-lg transition-all duration-200 hover:scale-[1.02] active:scale-95"
             >
               Book Now
+            </Link>
+
+            {/* MANAGE BOOKING outlined button */}
+            <Link
+              href={ADMIN_LOGIN_URL}
+              className="hero-cta-btn px-6 sm:px-7 py-3.5 text-xs sm:text-sm font-semibold tracking-wider uppercase rounded border border-white/70 hover:border-white text-white hover:bg-white/10 shadow-sm transition-all duration-200 hover:scale-[1.02] active:scale-95 backdrop-blur-sm"
+            >
+              Manage Booking
+            </Link>
+
+            {/* GET AN INSTANT QUOTE outlined button */}
+            <Link
+              href="/book"
+              className="hero-cta-btn px-6 sm:px-7 py-3.5 text-xs sm:text-sm font-semibold tracking-wider uppercase rounded border border-white/70 hover:border-white text-white hover:bg-white/10 shadow-sm transition-all duration-200 hover:scale-[1.02] active:scale-95 backdrop-blur-sm"
+            >
+              Get An Instant Quote
+            </Link>
+          </div>
+
+          {/* Understated vehicle tracking link */}
+          <div className="mt-4 sm:mt-5">
+            <Link
+              href="/book"
+              className="text-xs sm:text-sm text-zinc-300 hover:text-white underline underline-offset-4 decoration-zinc-500 hover:decoration-white transition-colors tracking-wide font-normal inline-flex items-center gap-1.5"
+            >
+              <span>Track my Vehicle</span>
             </Link>
           </div>
         </div>
