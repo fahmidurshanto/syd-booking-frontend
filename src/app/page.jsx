@@ -10,99 +10,13 @@ import ServicesCarousel from "@/components/ServicesCarousel";
 import ProfessionalChauffeurs from "@/components/ProfessionalChauffeurs";
 import FaqSection from "@/components/FaqSection";
 import Footer from "@/components/Footer";
+import Navbar from "@/components/Navbar";
 
 const ADMIN_URL = process.env.NEXT_PUBLIC_ADMIN_URL || "http://localhost:3001";
 const ADMIN_LOGIN_URL = `${ADMIN_URL.replace(/\/+$/, "")}/login`;
 
 export default function Home() {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const containerRef = useRef(null);
-  const mobileMenuRef = useRef(null);
-  const isAnimatingRef = useRef(false);
-
-  // Smooth open / close mobile menu animation using GSAP
-  const toggleMobileMenu = () => {
-    if (isAnimatingRef.current) return;
-    const menuEl = mobileMenuRef.current;
-    if (!menuEl) return;
-
-    if (!mobileMenuOpen) {
-      // OPEN MENU
-      isAnimatingRef.current = true;
-      setMobileMenuOpen(true);
-      menuEl.style.display = "block";
-
-      const items = menuEl.querySelectorAll(".mobile-menu-item");
-      const tl = gsap.timeline({
-        onComplete: () => {
-          isAnimatingRef.current = false;
-        },
-      });
-
-      tl.fromTo(
-        menuEl,
-        { height: 0, opacity: 0, y: -10 },
-        {
-          height: "auto",
-          opacity: 1,
-          y: 0,
-          duration: 0.4,
-          ease: "power2.out",
-        },
-      ).fromTo(
-        items,
-        { y: -15, opacity: 0 },
-        {
-          y: 0,
-          opacity: 1,
-          stagger: 0.08,
-          duration: 0.35,
-          ease: "power2.out",
-        },
-        "-=0.2",
-      );
-    } else {
-      // CLOSE MENU
-      closeMobileMenu();
-    }
-  };
-
-  const closeMobileMenu = () => {
-    const menuEl = mobileMenuRef.current;
-    if (!menuEl) {
-      setMobileMenuOpen(false);
-      return;
-    }
-
-    isAnimatingRef.current = true;
-    const items = menuEl.querySelectorAll(".mobile-menu-item");
-
-    const tl = gsap.timeline({
-      onComplete: () => {
-        menuEl.style.display = "none";
-        setMobileMenuOpen(false);
-        isAnimatingRef.current = false;
-      },
-    });
-
-    tl.to(items, {
-      y: -10,
-      opacity: 0,
-      stagger: 0.04,
-      duration: 0.2,
-      ease: "power2.in",
-    }).to(
-      menuEl,
-      {
-        height: 0,
-        opacity: 0,
-        y: -10,
-        duration: 0.25,
-        ease: "power2.in",
-      },
-      "-=0.1",
-    );
-  };
 
   useGSAP(
     () => {
@@ -231,150 +145,7 @@ export default function Home() {
         </div>
 
         {/* Header / Navigation Bar */}
-      <header className="relative z-20 w-full">
-        {/* Top bar (contact utility) */}
-        <div className="top-bar-contact w-full border-b border-white/10 bg-black/20 backdrop-blur-sm">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-9 flex items-center justify-end text-xs text-zinc-300 font-medium tracking-wide">
-            <a
-              href="tel:+61404410000"
-              className="flex items-center gap-1.5 text-zinc-200 hover:text-white transition-colors font-semibold"
-            >
-              <svg
-                className="w-3.5 h-3.5 text-zinc-300"
-                fill="currentColor"
-                viewBox="0 0 24 24"
-                aria-hidden="true"
-              >
-                <path d="M6.62 10.79a15.053 15.053 0 006.59 6.59l2.2-2.2a1 1 0 011.01-.24c1.12.37 2.33.57 3.58.57a1 1 0 011 1V20a1 1 0 01-1 1C10.61 21 3 13.39 3 4a1 1 0 011-1h3.5a1 1 0 011 1c0 1.25.2 2.46.57 3.58a1 1 0 01-.25 1.01l-2.2 2.2z" />
-              </svg>
-              <span>+61 404 410 000</span>
-            </a>
-          </div>
-        </div>
-
-        {/* Primary Navbar */}
-        <div className="main-navbar max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-          {/* Logo SYD Airport Transfer */}
-          <a href="/" className="flex items-center gap-3 group">
-            <div className="w-11 h-11 rounded-full border border-[#d3ad6b]/60 flex items-center justify-center bg-black/40 shadow-inner group-hover:border-[#e7c27d] transition-all">
-              <span className="text-[#c8a05c] font-sans font-black text-xs tracking-wider drop-shadow-md">
-                SYD
-              </span>
-            </div>
-            <div className="flex flex-col justify-center">
-              <span className="text-lg sm:text-xl font-serif tracking-[0.2em] text-[#e8c683] font-bold uppercase leading-none">
-                SYD Airport
-              </span>
-              <span className="text-lg sm:text-xl font-serif tracking-[0.2em] text-white font-bold uppercase leading-none mt-1">
-                Transfer
-              </span>
-              <span className="text-[9px] tracking-[0.36em] text-zinc-300 uppercase font-light mt-1.5 leading-none">
-                Chauffeur Services
-              </span>
-            </div>
-          </a>
-
-          {/* Desktop Navigation Links */}
-          <nav className="hidden lg:flex items-center gap-8 text-sm font-medium text-zinc-200">
-            <Link href="/about-us" className="hover:text-white transition-colors">
-              About Us
-            </Link>
-
-            <Link
-              href="/contact-us"
-              className="hover:text-white transition-colors"
-            >
-              Contact Us
-            </Link>
-
-            {/* Book Now outlined pill button */}
-            <Link
-              href="/book"
-              className="ml-2 px-5 py-2 rounded border border-white/60 hover:border-white text-white text-xs tracking-wider font-semibold transition-all hover:bg-white/10"
-            >
-              Book Now
-            </Link>
-
-            {/* Sign In Golden Button */}
-            <Link
-              href={ADMIN_LOGIN_URL}
-              className="px-5 py-2 rounded bg-[#c59e5f] hover:bg-[#d6af70] text-[#1a140b] text-xs font-bold tracking-wider uppercase transition-all duration-300 hover:scale-[1.02] active:scale-95 shadow-md shadow-[#c8a05c]/20"
-            >
-              Sign In
-            </Link>
-          </nav>
-
-          {/* Mobile hamburger button */}
-          <div className="flex lg:hidden">
-            <button
-              type="button"
-              onClick={() => toggleMobileMenu()}
-              className="p-2 text-zinc-200 hover:text-white transition-transform active:scale-90"
-              aria-label="Toggle menu"
-            >
-              <div className="w-6 h-5 relative flex flex-col justify-between">
-                <span
-                  className={`w-full h-0.5 bg-current rounded-full transform transition-all duration-300 origin-left ${
-                    mobileMenuOpen
-                      ? "rotate-45 translate-x-0.5 -translate-y-0.5"
-                      : ""
-                  }`}
-                />
-                <span
-                  className={`w-full h-0.5 bg-current rounded-full transition-opacity duration-200 ${
-                    mobileMenuOpen ? "opacity-0" : "opacity-100"
-                  }`}
-                />
-                <span
-                  className={`w-full h-0.5 bg-current rounded-full transform transition-all duration-300 origin-left ${
-                    mobileMenuOpen
-                      ? "-rotate-45 translate-x-0.5 translate-y-0.5"
-                      : ""
-                  }`}
-                />
-              </div>
-            </button>
-          </div>
-        </div>
-
-        {/* Mobile menu dropdown with GSAP animation */}
-        <div
-          ref={mobileMenuRef}
-          style={{ display: "none" }}
-          className="lg:hidden bg-zinc-950/95 backdrop-blur-md border-b border-white/10 px-6 py-5 space-y-4 overflow-hidden"
-        >
-          <Link
-            href="/about-us"
-            onClick={() => closeMobileMenu()}
-            className="mobile-menu-item block text-base font-medium text-zinc-200 hover:text-white py-1 transition-colors"
-          >
-            About Us
-          </Link>
-          <Link
-            href="/contact-us"
-            onClick={() => closeMobileMenu()}
-            className="mobile-menu-item block text-base font-medium text-zinc-200 hover:text-white py-1 transition-colors"
-          >
-            Contact Us
-          </Link>
-          <div className="mobile-menu-item pt-2 space-y-2">
-            <Link
-              href="/book"
-              onClick={() => closeMobileMenu()}
-              className="block text-center w-full py-3 rounded-lg border border-white/40 text-white font-bold text-sm tracking-wider uppercase transition-colors hover:bg-white/10"
-            >
-              Book Now
-            </Link>
-            <Link
-              href={ADMIN_LOGIN_URL}
-              onClick={() => closeMobileMenu()}
-              className="block text-center w-full py-3 rounded-lg border border-[#c8a05c] bg-gradient-to-r from-[#c59e5f] to-[#e4bf7e] text-black font-bold text-sm tracking-wider uppercase shadow-lg shadow-[#c8a05c]/10"
-            >
-              Sign In
-            </Link>
-          </div>
-        </div>
-      </header>
+        <Navbar currentPath="/" />
 
       {/* Hero Body Content */}
       <main className="relative z-10 flex-1 flex flex-col justify-center max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-16 sm:pt-24 pb-16">
@@ -451,7 +222,9 @@ export default function Home() {
       <ChauffeursAtYourService />
 
       {/* "Moving You In Comfort And Style" Services Carousel */}
-      <ServicesCarousel />
+      <div id="services">
+        <ServicesCarousel />
+      </div>
 
       {/* "Your Private Chauffeur: Professional, Experienced, Courteous And Discreet" */}
       <ProfessionalChauffeurs />

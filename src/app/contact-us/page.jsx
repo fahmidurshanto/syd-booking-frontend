@@ -3,11 +3,11 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState, useEffect } from "react";
+import Navbar from "@/components/Navbar";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 
 export default function ContactUsPage() {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [currentYear, setCurrentYear] = useState("2026");
   const [activeFaq, setActiveFaq] = useState(null);
 
@@ -229,130 +229,8 @@ export default function ContactUsPage() {
         <div className="absolute inset-0 bg-[radial-gradient(#222736_1px,transparent_1px)] [background-size:28px_28px] opacity-25" />
       </div>
 
-      {/* HEADER & TOP UTILITY BAR */}
-      <header className="relative z-30 w-full border-b border-white/10 bg-black/60 backdrop-blur-md">
-        {/* Top utility contact info */}
-        <div className="w-full border-b border-white/5 bg-black/30">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-9 flex items-center justify-between text-xs text-zinc-300">
-            <span className="hidden sm:inline-flex items-center gap-2 text-zinc-400">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              Australia&apos;s 24/7 Chauffeur &amp; Airport Transfer Operations Desk
-            </span>
-            <div className="flex items-center gap-5 ml-auto">
-              <a
-                href="mailto:info@sydairporttransfer.com.au"
-                className="hidden md:flex items-center gap-1.5 hover:text-[#d3ad6b] transition-colors"
-              >
-                <svg className="w-3.5 h-3.5 text-zinc-400" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
-                  <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
-                </svg>
-                <span>info@sydairporttransfer.com.au</span>
-              </a>
-              <a
-                href="tel:+61404410000"
-                className="flex items-center gap-1.5 font-semibold text-white hover:text-[#d3ad6b] transition-colors"
-              >
-                <svg className="w-3.5 h-3.5 text-[#c8a05c]" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M6.62 10.79a15.053 15.053 0 006.59 6.59l2.2-2.2a1 1 0 011.01-.24c1.12.37 2.33.57 3.58.57a1 1 0 011 1V20a1 1 0 01-1 1C10.61 21 3 13.39 3 4a1 1 0 011-1h3.5a1 1 0 011 1c0 1.25.2 2.46.57 3.58a1 1 0 01-.25 1.01l-2.2 2.2z" />
-                </svg>
-                <span>+61 404 410 000</span>
-              </a>
-            </div>
-          </div>
-        </div>
-
-        {/* Primary Navbar */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-          {/* Logo SYD Airport Transfer */}
-          <Link href="/" className="flex items-center gap-3 group">
-            <div className="w-11 h-11 rounded-full border border-[#d3ad6b]/60 flex items-center justify-center bg-black/50 shadow-inner group-hover:border-[#e7c27d] transition-all">
-              <span className="text-[#c8a05c] font-sans font-black text-xs tracking-wider drop-shadow-md">
-                SYD
-              </span>
-            </div>
-            <div className="flex flex-col justify-center">
-              <span className="text-lg sm:text-xl font-serif tracking-[0.2em] text-[#e8c683] font-bold uppercase leading-none">
-                SYD Airport
-              </span>
-              <span className="text-lg sm:text-xl font-serif tracking-[0.2em] text-white font-bold uppercase leading-none mt-1">
-                Transfer
-              </span>
-              <span className="text-[9px] tracking-[0.36em] text-zinc-300 uppercase font-light mt-1.5 leading-none">
-                Chauffeur Services
-              </span>
-            </div>
-          </Link>
-
-          {/* Desktop Navigation Links */}
-          <nav className="hidden lg:flex items-center gap-8 text-sm font-medium text-zinc-300">
-            <Link href="/about-us" className="hover:text-white transition-colors">
-              About Us
-            </Link>
-            <Link
-              href="/contact-us"
-              className="text-[#e8c683] font-semibold border-b border-[#e8c683]/60 pb-0.5"
-            >
-              Contact Us
-            </Link>
-
-            {/* Book Now Button */}
-            <Link
-              href="/book"
-              className="ml-2 px-5 py-2 rounded border border-[#c8a05c] bg-[#c59e5f]/15 hover:bg-[#c59e5f] text-white hover:text-black text-xs tracking-wider font-semibold transition-all duration-300 shadow-md shadow-[#c8a05c]/10"
-            >
-              Book Now
-            </Link>
-          </nav>
-
-          {/* Mobile hamburger button */}
-          <div className="flex lg:hidden">
-            <button
-              type="button"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 text-zinc-200 hover:text-white"
-              aria-label="Toggle menu"
-            >
-              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                {mobileMenuOpen ? (
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                ) : (
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
-                )}
-              </svg>
-            </button>
-          </div>
-        </div>
-
-        {/* Mobile menu dropdown */}
-        {mobileMenuOpen && (
-          <div className="lg:hidden bg-zinc-950/95 border-b border-white/10 px-6 py-5 space-y-4">
-            <Link
-              href="/about-us"
-              onClick={() => setMobileMenuOpen(false)}
-              className="block text-base font-medium text-zinc-200 hover:text-white py-1"
-            >
-              About Us
-            </Link>
-            <Link
-              href="/contact-us"
-              onClick={() => setMobileMenuOpen(false)}
-              className="block text-base font-medium text-[#e8c683] py-1"
-            >
-              Contact Us
-            </Link>
-            <div className="pt-2">
-              <Link
-                href="/book"
-                onClick={() => setMobileMenuOpen(false)}
-                className="block text-center w-full py-3 rounded-lg border border-[#c8a05c] bg-gradient-to-r from-[#c59e5f] to-[#e4bf7e] text-black font-bold text-sm tracking-wider uppercase shadow-lg shadow-[#c8a05c]/10"
-              >
-                Book Now
-              </Link>
-            </div>
-          </div>
-        )}
-      </header>
+      {/* Unified Global Header & Navbar */}
+      <Navbar currentPath="/contact-us" />
 
       {/* HERO SECTION (Mirroring Hughes contact-us layout) */}
       <section className="relative z-10 w-full pt-16 pb-20 sm:pt-24 sm:pb-28 border-b border-white/10 overflow-hidden">
