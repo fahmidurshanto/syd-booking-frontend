@@ -13,6 +13,7 @@ import {
   ServiceHeader,
   TimePickerInput,
 } from "@/utils";
+import { getStoredCustomer, saveCustomerBooking } from "@/utils/customerAuth";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 
@@ -55,6 +56,20 @@ export default function BookingForm({ category = "chauffeur" }) {
     setTodayStr(today);
     setPickupDate(today);
     setCalendarViewDate(new Date());
+
+    // 1-Click Auto-fill from logged-in customer profile
+    const loggedCustomer = getStoredCustomer();
+    if (loggedCustomer) {
+      if (loggedCustomer.fullName) setPassengerName(loggedCustomer.fullName);
+      if (loggedCustomer.phone) setPassengerPhone(loggedCustomer.phone);
+      if (loggedCustomer.email) setPassengerEmail(loggedCustomer.email);
+      if (loggedCustomer.preferences?.defaultPassengers) {
+        setPassengers(loggedCustomer.preferences.defaultPassengers);
+      }
+      if (loggedCustomer.preferences?.defaultLuggage) {
+        setLuggage(loggedCustomer.preferences.defaultLuggage);
+      }
+    }
   }, []);
 
   // Route Quote State
@@ -413,7 +428,13 @@ export default function BookingForm({ category = "chauffeur" }) {
 
       if (res.ok) {
         const data = await res.json();
-        setConfirmedBooking(data.booking || bookingPayload);
+        const finalBooking = data.booking || {
+          ...bookingPayload,
+          bookingNumber: "SYD-" + Math.random().toString(36).substring(2, 8).toUpperCase(),
+          status: "confirmed",
+        };
+        setConfirmedBooking(finalBooking);
+        saveCustomerBooking(finalBooking);
       } else {
         const errorData = await res.json().catch(() => ({}));
         alert(

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState, useRef, useEffect } from "react";
+import { getStoredCustomer } from "@/utils/customerAuth";
 
 const ADMIN_URL = process.env.NEXT_PUBLIC_ADMIN_URL || "http://localhost:3001";
 const ADMIN_LOGIN_URL = `${ADMIN_URL.replace(/\/+$/, "")}/login`;
@@ -137,7 +138,19 @@ export default function Navbar({ currentPath = "/" }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileExpandedIndex, setMobileExpandedIndex] = useState(null);
   const [activeDropdown, setActiveDropdown] = useState(null);
+  const [loggedInCustomer, setLoggedInCustomer] = useState(null);
   const timeoutRef = useRef(null);
+
+  useEffect(() => {
+    const cust = getStoredCustomer();
+    if (cust) setLoggedInCustomer(cust);
+
+    const onAuthChange = () => {
+      setLoggedInCustomer(getStoredCustomer());
+    };
+    window.addEventListener("syd_customer_auth_changed", onAuthChange);
+    return () => window.removeEventListener("syd_customer_auth_changed", onAuthChange);
+  }, []);
 
   const handleMouseEnter = (idx) => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
@@ -280,13 +293,23 @@ export default function Navbar({ currentPath = "/" }) {
             Book Now
           </Link>
 
-          {/* Sign In Golden Button */}
-          <Link
-            href={ADMIN_LOGIN_URL}
-            className="px-4 py-2 rounded bg-[#c59e5f] hover:bg-[#d6af70] text-[#1a140b] text-xs font-bold tracking-wider uppercase transition-all duration-200 hover:scale-[1.02] active:scale-95 shadow-md shadow-[#c8a05c]/20"
-          >
-            Sign In
-          </Link>
+          {/* Passenger Portal / Sign In Button */}
+          {loggedInCustomer ? (
+            <Link
+              href="/customer/bookings"
+              className="px-4 py-2 rounded bg-gradient-to-r from-[#c8a05c] to-[#e4bf7e] text-[#1a140b] text-xs font-bold tracking-wider uppercase transition-all duration-200 hover:scale-[1.02] active:scale-95 shadow-md shadow-[#c8a05c]/25 flex items-center gap-1.5"
+            >
+              <span>👤</span>
+              <span>Portal</span>
+            </Link>
+          ) : (
+            <Link
+              href="/customer/login"
+              className="px-4 py-2 rounded bg-[#c59e5f] hover:bg-[#d6af70] text-[#1a140b] text-xs font-bold tracking-wider uppercase transition-all duration-200 hover:scale-[1.02] active:scale-95 shadow-md shadow-[#c8a05c]/20"
+            >
+              Sign In
+            </Link>
+          )}
         </nav>
 
         {/* Mobile / Tablet Hamburger Button */}
@@ -395,13 +418,23 @@ export default function Navbar({ currentPath = "/" }) {
             >
               Book Now
             </Link>
-            <Link
-              href={ADMIN_LOGIN_URL}
-              onClick={() => setMobileMenuOpen(false)}
-              className="block text-center w-full py-3 rounded-lg bg-[#c59e5f] hover:bg-[#d6af70] text-[#1a140b] font-bold text-xs tracking-wider uppercase transition-all duration-200"
-            >
-              Sign In
-            </Link>
+            {loggedInCustomer ? (
+              <Link
+                href="/customer/bookings"
+                onClick={() => setMobileMenuOpen(false)}
+                className="block text-center w-full py-3 rounded-lg bg-gradient-to-r from-[#c8a05c] to-[#e4bf7e] text-[#1a140b] font-bold text-xs tracking-wider uppercase transition-all duration-200"
+              >
+                Passenger Portal ({loggedInCustomer.fullName?.split(" ")[0]})
+              </Link>
+            ) : (
+              <Link
+                href="/customer/login"
+                onClick={() => setMobileMenuOpen(false)}
+                className="block text-center w-full py-3 rounded-lg bg-[#c59e5f] hover:bg-[#d6af70] text-[#1a140b] font-bold text-xs tracking-wider uppercase transition-all duration-200"
+              >
+                Sign In
+              </Link>
+            )}
           </div>
         </div>
       )}
