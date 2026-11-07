@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { getCustomerBookings } from "@/utils/customerAuth";
+import { calculateStripeSurcharge } from "@/utils/stripeFee";
 
 export default function CustomerInvoicePage() {
   const params = useParams();
@@ -34,9 +35,30 @@ export default function CustomerInvoicePage() {
     window.print();
   };
 
-  const fareTotal = booking.fare?.total || 115;
-  const gst = Number((fareTotal * 0.1).toFixed(2));
-  const baseFare = Number((fareTotal - gst).toFixed(2));
+  // Base fare extraction & Surcharge calculation
+  const totalAmount = booking.fare?.total || 115;
+  const cardType = booking.fare?.cardType || "domestic";
+  const recordedSurcharge = booking.fare?.surcharge;
+
+  let baseFare = booking.fare?.baseFare;
+  let surchargeAmount = 0;
+
+  if (recordedSurcharge !== undefined) {
+    surchargeAmount = Number(recordedSurcharge);
+    baseFare = Number(booking.fare?.baseFare || totalAmount - surchargeAmount);
+  } else if (booking.paymentStatus === "paid") {
+    // If paid online via card, compute real Stripe fee based on region
+    const calc = calculateStripeSurcharge(totalAmount, cardType);
+    baseFare = Number(totalAmount);
+    surchargeAmount = calc.surcharge;
+  } else {
+    baseFare = Number(totalAmount);
+    surchargeAmount = 0;
+  }
+
+  const gst = Number((baseFare * 0.1).toFixed(2));
+  const preGstFare = Number((baseFare - gst).toFixed(2));
+  const finalTotal = Number((baseFare + surchargeAmount).toFixed(2));
 
   return (
     <div className="w-full max-w-3xl mx-auto space-y-6">
@@ -149,7 +171,7 @@ export default function CustomerInvoicePage() {
           </div>
         </div>
 
-        {/* Financial Line Items */}
+        {/* Financial Line Items with Stripe Surcharge */}
         <div>
           <table className="w-full text-left text-xs border-collapse">
             <thead>
@@ -163,14 +185,14 @@ export default function CustomerInvoicePage() {
               <tr>
                 <td className="py-3">
                   <div className="font-semibold text-white">
-                    Private {booking.vehicleType || "Chauffeur"} Transfer
+                    Private {booking.vehicleType || "Chauffeur"} Transfer Fare
                   </div>
                   <div className="text-[11px] text-zinc-400">
-                    Includes all airport tolls, private chauffeur service &amp; guaranteed wait time
+                    Includes Sydney tolls, professional chauffeur service &amp; meet and greet
                   </div>
                 </td>
                 <td className="py-3 text-center text-zinc-300">1</td>
-                <td className="py-3 text-right font-medium text-white">${baseFare.toFixed(2)}</td>
+                <td className="py-3 text-right font-medium text-white">${preGstFare.toFixed(2)}</td>
               </tr>
               <tr>
                 <td className="py-3">
@@ -179,6 +201,22 @@ export default function CustomerInvoicePage() {
                 <td className="py-3 text-center text-zinc-300">1</td>
                 <td className="py-3 text-right font-medium text-zinc-300">${gst.toFixed(2)}</td>
               </tr>
+              {surchargeAmount > 0 && (
+                <tr className="bg-amber-500/5">
+                  <td className="py-3 pl-2">
+                    <div className="font-semibold text-amber-300">
+                      Stripe Card Processing Surcharge ({cardType === "international" ? "International Card 3.5% + $0.30" : "Australian Card 1.65% + $0.30"})
+                    </div>
+                    <div className="text-[11px] text-zinc-400">
+                      Card gateway transaction processing fee
+                    </div>
+                  </td>
+                  <td className="py-3 text-center text-amber-200">1</td>
+                  <td className="py-3 text-right font-semibold text-amber-300 pr-2">
+                    +${surchargeAmount.toFixed(2)}
+                  </td>
+                </tr>
+              )}
             </tbody>
             <tfoot>
               <tr className="border-t border-white/15">
@@ -186,7 +224,7 @@ export default function CustomerInvoicePage() {
                   Total Amount Paid
                 </td>
                 <td className="pt-4 text-right text-lg font-bold font-serif text-[#e8c683]">
-                  ${fareTotal.toFixed(2)} AUD
+                  ${finalTotal.toFixed(2)} AUD
                 </td>
               </tr>
             </tfoot>
@@ -198,7 +236,7 @@ export default function CustomerInvoicePage() {
           <div className="flex items-center gap-2">
             <span className="text-emerald-400 font-bold">✓ Payment Status:</span>
             <span className="uppercase font-semibold text-white">
-              {booking.paymentStatus === "paid" ? "PAID IN FULL" : booking.paymentStatus || "PENDING"}
+              {booking.paymentStatus === "paid" ? "PAID IN FULL (ONLINE CARD)" : booking.paymentStatus || "PENDING"}
             </span>
           </div>
           <span className="text-zinc-400 text-[11px]">Thank you for traveling with SYD.</span>
@@ -213,4 +251,3 @@ export default function CustomerInvoicePage() {
     </div>
   );
 }
-

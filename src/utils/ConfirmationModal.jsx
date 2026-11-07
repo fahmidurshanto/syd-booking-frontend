@@ -4,6 +4,8 @@ import { Elements } from "@stripe/react-stripe-js";
 import { useEffect, useState } from "react";
 import StripePaymentForm from "@/components/StripePaymentForm";
 import { getStripe } from "./stripe";
+import { calculateStripeSurcharge, STRIPE_RATES } from "./stripeFee";
+import { saveCustomerBooking } from "./customerAuth";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 
@@ -28,7 +30,16 @@ export default function ConfirmationModal({
   const [paymentCompleted, setPaymentCompleted] = useState(false);
   const [showPaymentSection, setShowPaymentSection] = useState(true);
 
-  // When booking is confirmed, initialize Stripe PaymentIntent
+  // Card region state: 'domestic' (1.65% + $0.30) vs 'international' (3.5% + $0.30)
+  const [cardType, setCardType] = useState("domestic");
+
+  const baseFare = confirmedBooking?.fare?.total || calculatedFare?.total || 85;
+  const fareCurrency =
+    confirmedBooking?.fare?.currency || calculatedFare?.currency || "AUD";
+
+  const feeCalc = calculateStripeSurcharge(baseFare, cardType);
+
+  // Re-initialize payment intent whenever baseFare or cardType changes
   useEffect(() => {
     if (!confirmedBooking) return;
 
@@ -40,10 +51,7 @@ export default function ConfirmationModal({
 
         const bookingId = confirmedBooking.id || confirmedBooking._id;
         const bookingNumber = confirmedBooking.bookingNumber;
-        const fareTotal =
-          confirmedBooking.fare?.total || calculatedFare?.total || 85;
-        const fareCurrency =
-          confirmedBooking.fare?.currency || calculatedFare?.currency || "AUD";
+        const totalWithSurcharge = feeCalc.total;
 
         const res = await fetch(`${API_BASE}/payments/create-intent`, {
           method: "POST",
@@ -51,7 +59,10 @@ export default function ConfirmationModal({
           body: JSON.stringify({
             bookingId,
             bookingNumber,
-            amount: fareTotal,
+            amount: totalWithSurcharge,
+            baseFare: feeCalc.baseFare,
+            surcharge: feeCalc.surcharge,
+            cardType: feeCalc.cardType,
             currency: fareCurrency,
           }),
         });
@@ -84,13 +95,9 @@ export default function ConfirmationModal({
     return () => {
       isMounted = false;
     };
-  }, [confirmedBooking, calculatedFare]);
+  }, [confirmedBooking, cardType, baseFare]);
 
   if (!confirmedBooking) return null;
-
-  const fareTotal = confirmedBooking.fare?.total || calculatedFare?.total || 85;
-  const fareCurrency =
-    confirmedBooking.fare?.currency || calculatedFare?.currency || "AUD";
 
   const stripePromise = getStripe(publishableKey);
 
@@ -128,6 +135,30 @@ export default function ConfirmationModal({
     },
   };
 
+  const handlePaymentDone = (paymentIntent) => {
+    setPaymentCompleted(true);
+    // Update booking in local storage with paid surcharge breakdown
+    const updated = {
+      ...confirmedBooking,
+      status: "confirmed",
+      paymentStatus: "paid",
+      fare: {
+        total: feeCalc.total,
+        baseFare: feeCalc.baseFare,
+        surcharge: feeCalc.surcharge,
+        currency: fareCurrency,
+        cardType: feeCalc.cardType,
+      },
+      paymentDetails: {
+        paymentIntentId: paymentIntent?.id || "pi_mock",
+        paidAmount: feeCalc.total,
+        paidCurrency: fareCurrency,
+        paidAt: new Date().toISOString(),
+      },
+    };
+    saveCustomerBooking(updated);
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 md:p-6 bg-black/85 backdrop-blur-md overflow-y-auto">
       <div className="relative w-full max-w-4xl lg:max-w-5xl my-auto rounded-2xl bg-zinc-900 border border-[#c8a05c]/50 shadow-[0_0_50px_rgba(200,160,92,0.25)] flex flex-col max-h-[92vh] overflow-hidden confirmation-modal-card">
@@ -135,10 +166,11 @@ export default function ConfirmationModal({
         <div className="flex items-center justify-between px-5 sm:px-7 py-3.5 border-b border-white/10 shrink-0 bg-zinc-900/95">
           <div className="flex items-center gap-3">
             <div
-              className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm shrink-0 ${paymentCompleted
-                ? "bg-emerald-500/20 border border-emerald-500 text-emerald-400"
-                : "bg-[#c8a05c]/20 border border-[#c8a05c] text-[#c8a05c]"
-                }`}
+              className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm shrink-0 ${
+                paymentCompleted
+                  ? "bg-emerald-500/20 border border-emerald-500 text-emerald-400"
+                  : "bg-[#c8a05c]/20 border border-[#c8a05c] text-[#c8a05c]"
+              }`}
             >
               ✓
             </div>
@@ -170,11 +202,11 @@ export default function ConfirmationModal({
           </button>
         </div>
 
-        {/* Modal Body: Left column (details) & Right column (card / payment) */}
+        {/* Modal Body */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 text-zinc-300">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-5 lg:gap-6 items-start">
 
-            {/* LEFT COLUMN: Passenger and Bookings Details */}
+            {/* LEFT COLUMN: Passenger & Trip Details */}
             <div className="md:col-span-6 flex flex-col space-y-3.5 bg-black/30 p-4 sm:p-5 rounded-xl border border-white/10">
               <div className="flex items-center justify-between border-b border-white/10 pb-2.5">
                 <span className="text-xs font-bold uppercase tracking-wider text-[#c8a05c] flex items-center gap-2">
@@ -186,14 +218,14 @@ export default function ConfirmationModal({
                 </span>
               </div>
 
-              {/* Route */}
+              {/* Route Itinerary */}
               <div className="space-y-2 bg-white/5 p-3 rounded-lg border border-white/5 text-xs sm:text-sm">
                 <div className="flex items-start gap-2.5">
                   <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 mt-1 shrink-0"></span>
                   <div className="min-w-0 flex-1">
                     <p className="text-[10px] uppercase font-bold text-zinc-400">Pickup</p>
                     <p className="text-white font-medium break-words">
-                      {confirmedBooking.pickup}
+                      {typeof confirmedBooking.pickup === "object" ? confirmedBooking.pickup.address : confirmedBooking.pickup}
                     </p>
                   </div>
                 </div>
@@ -203,7 +235,7 @@ export default function ConfirmationModal({
                   <div className="min-w-0 flex-1">
                     <p className="text-[10px] uppercase font-bold text-zinc-400">Destination</p>
                     <p className="text-white font-medium break-words">
-                      {confirmedBooking.dropoff}
+                      {typeof confirmedBooking.dropoff === "object" ? confirmedBooking.dropoff.address : confirmedBooking.dropoff}
                     </p>
                   </div>
                 </div>
@@ -242,14 +274,14 @@ export default function ConfirmationModal({
                 </div>
               </div>
 
-              {/* Guaranteed Fare */}
-              <div className="flex items-center justify-between py-2.5 px-3.5 bg-[#c8a05c]/15 border border-[#c8a05c]/40 rounded-lg text-sm sm:text-base font-bold">
-                <div className="flex flex-col">
-                  <span className="text-xs uppercase font-bold text-[#c8a05c] tracking-wide">Guaranteed Fare</span>
-                  <span className="text-[10px] font-normal text-zinc-400">Tolls &amp; GST included</span>
+              {/* Base Fare Summary */}
+              <div className="flex items-center justify-between py-2.5 px-3.5 bg-black/40 border border-white/10 rounded-lg text-xs sm:text-sm">
+                <div>
+                  <span className="text-zinc-400 block">Base Transfer Fare:</span>
+                  <span className="text-[10px] text-zinc-500">Tolls &amp; GST included</span>
                 </div>
-                <span className="text-white font-mono text-base sm:text-lg">
-                  ${fareTotal} {fareCurrency}
+                <span className="text-white font-mono font-bold text-sm sm:text-base">
+                  ${baseFare} {fareCurrency}
                 </span>
               </div>
 
@@ -258,7 +290,7 @@ export default function ConfirmationModal({
               </p>
             </div>
 
-            {/* RIGHT COLUMN: Card Input Field & Payment Action */}
+            {/* RIGHT COLUMN: Real Stripe Card Surcharge & Payment Form */}
             <div className="md:col-span-6 flex flex-col justify-between space-y-3.5 bg-black/40 p-4 sm:p-5 rounded-xl border border-[#c8a05c]/35 shadow-inner">
               <div className="flex items-center justify-between border-b border-white/10 pb-2.5">
                 <span className="text-xs font-bold tracking-wide uppercase text-[#c8a05c] flex items-center gap-1.5">
@@ -275,10 +307,10 @@ export default function ConfirmationModal({
                       d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
                     />
                   </svg>
-                  Secure Payment Method
+                  Card Payment &amp; Surcharge
                 </span>
                 <span className="text-[10px] text-zinc-400">
-                  Powered by Stripe
+                  Official Stripe Rates
                 </span>
               </div>
 
@@ -291,7 +323,7 @@ export default function ConfirmationModal({
                   <div>
                     <h4 className="text-base font-bold text-white">Payment Successful!</h4>
                     <p className="text-xs text-zinc-300 mt-1 max-w-xs">
-                      Your payment of <span className="text-white font-bold">${fareTotal} {fareCurrency}</span> has been processed. A receipt has been sent to your email.
+                      Your payment of <span className="text-white font-bold">${feeCalc.total.toFixed(2)} {fareCurrency}</span> (Base ${baseFare} + ${feeCalc.surcharge.toFixed(2)} card processing fee) has been processed.
                     </p>
                   </div>
                   <button
@@ -310,10 +342,10 @@ export default function ConfirmationModal({
                   </div>
                   <div>
                     <h4 className="text-sm sm:text-base font-bold text-white">
-                      Pay in Vehicle Selected
+                      Pay in Vehicle Selected (Zero Surcharge)
                     </h4>
                     <p className="text-xs text-zinc-300 mt-1 max-w-xs">
-                      You can pay <span className="text-white font-semibold">${fareTotal} {fareCurrency}</span> via Cash, EFTPOS, or Credit Card directly to the driver upon ride completion.
+                      You can pay exactly <span className="text-white font-semibold">${baseFare} {fareCurrency}</span> via Cash directly to the driver upon ride completion without online card surcharge.
                     </p>
                   </div>
                   <div className="w-full space-y-2 pt-2">
@@ -334,69 +366,134 @@ export default function ConfirmationModal({
                   </div>
                 </div>
               ) : (
-                /* Active Stripe Payment Form */
-                <div className="stripe-card-container">
-                  {isInitializingPayment ? (
-                    <div className="py-10 flex flex-col items-center justify-center space-y-2 text-zinc-400 text-xs">
-                      <svg
-                        className="animate-spin h-6 w-6 text-[#c8a05c]"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                        />
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        />
-                      </svg>
-                      <span>Initializing secure card gateway...</span>
-                    </div>
-                  ) : clientSecret && stripePromise ? (
-                    <div className="space-y-3">
-                      <Elements
-                        stripe={stripePromise}
-                        options={{
-                          clientSecret,
-                          appearance,
-                        }}
-                      >
-                        <StripePaymentForm
-                          booking={confirmedBooking}
-                          amount={fareTotal}
-                          currency={fareCurrency}
-                          onPaymentSuccess={() => {
-                            setPaymentCompleted(true);
-                          }}
-                          onCancel={() => {
-                            setShowPaymentSection(false);
-                          }}
-                        />
-                      </Elements>
-                    </div>
-                  ) : (
-                    <div className="py-6 text-center space-y-3">
-                      <p className="text-xs text-amber-300">
-                        {paymentError ||
-                          "Online card processing unavailable. You may pay directly in the vehicle."}
-                      </p>
+                /* Active Stripe Payment Form with Real Surcharge Selector */
+                <div className="space-y-3.5">
+                  {/* Card Type Selector (Domestic 1.65%+$0.30 vs International 3.5%+$0.30) */}
+                  <div className="space-y-1.5">
+                    <label className="block text-[11px] uppercase font-bold tracking-wider text-zinc-300">
+                      Card Issuing Region (Stripe Surcharge):
+                    </label>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
                       <button
                         type="button"
-                        onClick={() => setShowPaymentSection(false)}
-                        className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/15 text-xs text-white cursor-pointer transition-all"
+                        onClick={() => setCardType("domestic")}
+                        className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                          cardType === "domestic"
+                            ? "border-[#c8a05c] bg-[#c8a05c]/15 text-white font-semibold shadow-sm"
+                            : "border-white/10 bg-black/40 text-zinc-400 hover:border-white/20"
+                        }`}
                       >
-                        Continue with In-Car Payment
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold">🇦🇺 Australian Card</span>
+                          {cardType === "domestic" && <span className="text-[#c8a05c]">●</span>}
+                        </div>
+                        <div className="text-[10px] text-zinc-400 mt-0.5">
+                          1.65% + $0.30
+                        </div>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setCardType("international")}
+                        className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                          cardType === "international"
+                            ? "border-[#c8a05c] bg-[#c8a05c]/15 text-white font-semibold shadow-sm"
+                            : "border-white/10 bg-black/40 text-zinc-400 hover:border-white/20"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold">🌏 International Card</span>
+                          {cardType === "international" && <span className="text-[#c8a05c]">●</span>}
+                        </div>
+                        <div className="text-[10px] text-zinc-400 mt-0.5">
+                          3.50% + $0.30
+                        </div>
                       </button>
                     </div>
-                  )}
+                  </div>
+
+                  {/* Surcharge Line Item Breakdown */}
+                  <div className="p-3 rounded-xl bg-zinc-950/80 border border-white/10 text-xs space-y-1.5">
+                    <div className="flex justify-between text-zinc-400">
+                      <span>Ride Base Fare:</span>
+                      <span className="font-medium text-white">${baseFare.toFixed(2)} AUD</span>
+                    </div>
+                    <div className="flex justify-between text-zinc-400">
+                      <span>Stripe Card Fee ({feeCalc.rateLabel}):</span>
+                      <span className="font-semibold text-amber-300">
+                        +${feeCalc.surcharge.toFixed(2)} AUD
+                      </span>
+                    </div>
+                    <div className="pt-2 border-t border-white/10 flex justify-between items-center text-sm font-bold text-white">
+                      <span>Total Charged to Card:</span>
+                      <span className="text-base font-serif text-[#e8c683]">
+                        ${feeCalc.total.toFixed(2)} AUD
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Stripe Payment Form Container */}
+                  <div className="stripe-card-container">
+                    {isInitializingPayment ? (
+                      <div className="py-8 flex flex-col items-center justify-center space-y-2 text-zinc-400 text-xs">
+                        <svg
+                          className="animate-spin h-6 w-6 text-[#c8a05c]"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          />
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          />
+                        </svg>
+                        <span>Updating secure payment intent...</span>
+                      </div>
+                    ) : clientSecret && stripePromise ? (
+                      <div className="space-y-3">
+                        <Elements
+                          stripe={stripePromise}
+                          options={{
+                            clientSecret,
+                            appearance,
+                          }}
+                        >
+                          <StripePaymentForm
+                            booking={confirmedBooking}
+                            amount={feeCalc.total.toFixed(2)}
+                            currency={fareCurrency}
+                            onPaymentSuccess={handlePaymentDone}
+                            onCancel={() => {
+                              setShowPaymentSection(false);
+                            }}
+                          />
+                        </Elements>
+                      </div>
+                    ) : (
+                      <div className="py-5 text-center space-y-2.5">
+                        <p className="text-xs text-amber-300">
+                          {paymentError ||
+                            "Online card processing unavailable. You may pay directly in the vehicle."}
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => setShowPaymentSection(false)}
+                          className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/15 text-xs text-white cursor-pointer transition-all"
+                        >
+                          Continue with In-Car Payment
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
 

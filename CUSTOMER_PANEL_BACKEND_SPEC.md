@@ -447,8 +447,13 @@ Returns structured invoice data for the frontend to render and print/download.
       "breakdown": {
         "baseFare": 105.00,
         "airportToll": 15.00,
-        "gst": 5.00,
-        "total": 125.00,
+        "gst": 12.00,
+        "surcharge": {
+          "cardType": "domestic",
+          "rate": "1.65% + $0.30",
+          "amount": 2.27
+        },
+        "total": 127.27,
         "currency": "AUD"
       },
       "payment": {
@@ -458,6 +463,37 @@ Returns structured invoice data for the frontend to render and print/download.
         "paidAt": "2026-11-07T12:05:22.000Z"
       }
     }
+  }
+  ```
+
+---
+
+### 4.6 Payment Intent & Surcharge Endpoint (`POST /api/payments/create-intent`)
+When initializing card payment with Stripe, the frontend sends the calculated surcharge and base fare:
+- **Request Body:**
+  ```json
+  {
+    "bookingId": "672d90fa9e...",
+    "bookingNumber": "SYD-9V2K41",
+    "amount": 127.27,
+    "baseFare": 125.00,
+    "surcharge": 2.27,
+    "cardType": "domestic",
+    "currency": "AUD"
+  }
+  ```
+- **Stripe Official Processing Rates in Australia:**
+  - **Australian Domestic Cards:** `1.65% + A$0.30`
+  - **International Cards:** `3.50% + A$0.30`
+  - Pass-through surcharge formula: `(baseFare * rate.percentage) + rate.fixed`
+- **Response (200 OK):**
+  ```json
+  {
+    "success": true,
+    "clientSecret": "pi_3Mtwx..._secret_...",
+    "publishableKey": "pk_test_...",
+    "amount": 127.27,
+    "currency": "AUD"
   }
   ```
 
