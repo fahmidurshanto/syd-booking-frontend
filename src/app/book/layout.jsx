@@ -8,45 +8,41 @@ export const metadata = {
 
 export default function BookLayout({ children }) {
   return (
-    <div className="relative min-h-screen w-full flex flex-col bg-[#0b0c10] text-white font-sans select-none overflow-x-hidden">
-      {/* Background glow & subtle luxury backdrop */}
+    <div className="relative min-h-screen w-full flex flex-col bg-[#f8fafc] text-slate-900 font-sans select-none overflow-x-hidden">
+      {/* Background subtle light gradient */}
       <div className="fixed inset-0 z-0 pointer-events-none">
-        <div className="absolute -top-40 -left-40 w-96 h-96 bg-[#c8a05c]/10 rounded-full blur-[120px]" />
-        <div className="absolute top-1/2 -right-40 w-96 h-96 bg-blue-900/10 rounded-full blur-[140px]" />
-        <div className="absolute inset-0 bg-[radial-gradient(#1f2430_1px,transparent_1px)] [background-size:24px_24px] opacity-20" />
+        <div className="absolute top-0 left-0 right-0 h-96 bg-gradient-to-b from-blue-50/70 via-slate-50 to-transparent" />
+        <div className="absolute -top-32 right-1/4 w-96 h-96 bg-amber-500/5 rounded-full blur-[100px]" />
       </div>
 
-      {/* Header */}
-      <header className="relative z-20 w-full border-b border-white/10 bg-black/40 backdrop-blur-md">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
+      {/* Header (Clean Hughes Light Header) */}
+      <header className="relative z-20 w-full border-b border-slate-200/80 bg-white/95 backdrop-blur-md">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex items-center justify-between">
           {/* Logo SYD Airport Transfer */}
           <Link href="/" className="flex items-center gap-3 group">
-            <div className="w-10 h-10 rounded-full border border-[#d3ad6b]/60 flex items-center justify-center bg-black/40 shadow-inner group-hover:border-[#e7c27d] transition-all">
-              <span className="text-[#c8a05c] font-sans font-black text-xs tracking-wider drop-shadow-md">
+            <div className="w-9 h-9 rounded-full border border-[#c8a05c] flex items-center justify-center bg-slate-900 text-[#e8c683] shadow-sm">
+              <span className="font-sans font-black text-xs tracking-wider">
                 SYD
               </span>
             </div>
             <div className="flex flex-col justify-center">
-              <span className="text-base sm:text-lg font-serif tracking-[0.2em] text-[#e8c683] font-bold uppercase leading-none">
+              <span className="text-base font-serif tracking-[0.16em] text-slate-900 font-bold uppercase leading-tight">
                 SYD Airport
               </span>
-              <span className="text-base sm:text-lg font-serif tracking-[0.2em] text-white font-bold uppercase leading-none mt-1">
-                Transfer
-              </span>
-              <span className="text-[8px] tracking-[0.36em] text-zinc-300 uppercase font-light mt-1.5 leading-none">
+              <span className="text-[9px] tracking-[0.25em] text-[#b8860b] uppercase font-semibold">
                 Chauffeur Services
               </span>
             </div>
           </Link>
 
           {/* Contact / Back to Home */}
-          <div className="flex items-center gap-5">
+          <div className="flex items-center gap-4 sm:gap-6">
             <a
               href="tel:+61404410000"
-              className="hidden sm:flex items-center gap-1.5 text-xs text-zinc-300 hover:text-white transition-colors font-medium"
+              className="hidden sm:flex items-center gap-1.5 text-xs text-slate-600 hover:text-slate-900 transition-colors font-medium"
             >
               <svg
-                className="w-3.5 h-3.5 text-zinc-400"
+                className="w-3.5 h-3.5 text-slate-500"
                 fill="currentColor"
                 viewBox="0 0 24 24"
                 aria-hidden="true"
@@ -55,9 +51,10 @@ export default function BookLayout({ children }) {
               </svg>
               <span>+61 404 410 000</span>
             </a>
+
             <Link
               href="/"
-              className="text-xs font-semibold px-4 py-2 rounded border border-white/20 hover:border-white text-zinc-200 hover:text-white transition-all bg-white/5 hover:bg-white/10"
+              className="text-xs font-semibold px-4 py-2 rounded-lg border border-slate-200 hover:border-slate-300 text-slate-700 hover:text-slate-900 transition-all bg-white hover:bg-slate-50 shadow-sm"
             >
               ← Back to Home
             </Link>
@@ -66,7 +63,7 @@ export default function BookLayout({ children }) {
       </header>
 
       {/* Main Content Area */}
-      <main className="relative z-10 flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16 flex flex-col items-center">
+      <main className="relative z-10 flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 flex flex-col items-center">
         {children}
       </main>
     </div>

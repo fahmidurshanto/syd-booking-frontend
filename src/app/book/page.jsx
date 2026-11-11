@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import gsap from "gsap";
@@ -15,7 +14,6 @@ export default function BookPage() {
     () => {
       const tl = gsap.timeline({ defaults: { ease: "power2.out" } });
 
-      // Crisp, subtle entrance animation
       tl.fromTo(
         ".book-step-indicator",
         { y: -6, opacity: 0 },
@@ -56,161 +54,137 @@ export default function BookPage() {
   return (
     <div ref={pageContainerRef} className="w-full flex flex-col items-center">
       {/* Step indicator breadcrumb */}
-      <div className="book-step-indicator flex items-center gap-3 text-xs tracking-widest uppercase font-semibold text-[#c8a05c] mb-3">
-        <span className="w-6 h-6 rounded-full bg-[#c8a05c] text-black flex items-center justify-center font-bold text-xs">
+      <div className="book-step-indicator flex items-center gap-2 text-xs tracking-widest uppercase font-semibold text-slate-500 mb-2">
+        <span className="w-5 h-5 rounded-full bg-[#0f172a] text-white flex items-center justify-center font-bold text-[11px]">
           1
         </span>
         <span>Step 1 of 3: Select Vehicle Category</span>
       </div>
 
-      <h1 className="book-title text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-center text-white font-serif">
+      <h1 className="book-title text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight text-center text-slate-900 font-serif">
         How would you like to travel?
       </h1>
-      <p className="book-subtitle mt-3 text-sm sm:text-base text-zinc-400 text-center max-w-lg">
+      <p className="book-subtitle mt-2 text-xs sm:text-sm text-slate-500 text-center max-w-lg">
         Choose between our prestigious private Chauffeur experience or our
         on-demand fast Taxi service.
       </p>
 
-      {/* Category Selection Cards */}
-      <div className="mt-10 sm:mt-12 grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 w-full max-w-4xl">
+      {/* Category Selection Cards (Light Mode Luxury) */}
+      <div className="mt-8 sm:mt-10 grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 w-full max-w-2xl">
         {/* Card 1: Chauffeur Service */}
         <div
-          className={`category-card group relative rounded-2xl overflow-hidden border transition-all duration-300 text-left flex flex-col bg-zinc-900/60 backdrop-blur-md ${
+          onClick={() => handleSelectCategory("chauffeur")}
+          className={`category-card group relative rounded-2xl p-5 border transition-all duration-300 text-left flex flex-col justify-between cursor-pointer bg-white shadow-sm hover:shadow-md ${
             selectedCategory === "chauffeur"
-              ? "border-[#c8a05c] shadow-[0_0_35px_rgba(200,160,92,0.25)] ring-2 ring-[#c8a05c]/50 scale-[1.01]"
-              : "border-white/10 hover:border-[#c8a05c]/40 hover:bg-zinc-900/80"
+              ? "border-[#c8a05c] ring-2 ring-[#c8a05c]/30 shadow-md bg-amber-50/20"
+              : "border-slate-200 hover:border-slate-300"
           }`}
         >
-          {/* Badge */}
-          <div className="absolute top-4 right-4 z-20">
-            <span className="px-3 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase bg-[#c8a05c] text-black shadow-md">
+          {/* Header Row: Radio, Title & Badge */}
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div
+                className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                  selectedCategory === "chauffeur"
+                    ? "border-[#c8a05c] bg-[#c8a05c]"
+                    : "border-slate-300 group-hover:border-[#c8a05c]"
+                }`}
+              >
+                {selectedCategory === "chauffeur" && (
+                  <div className="w-1.5 h-1.5 rounded-full bg-white" />
+                )}
+              </div>
+              <h2 className="text-base sm:text-lg font-bold font-serif text-slate-900 group-hover:text-[#b8860b] transition-colors">
+                Chauffeur Service
+              </h2>
+            </div>
+
+            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase bg-amber-100 text-amber-900 border border-amber-200 shrink-0">
               Premium Executive
             </span>
           </div>
 
-          {/* Chauffeur Image Container */}
-          <div className="relative h-48 sm:h-56 w-full overflow-hidden">
-            <Image
-              src="/chauffeur-card.jpg"
-              alt="Chauffeur Luxury Car"
-              fill
-              priority
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 450px"
-              className="object-cover object-center group-hover:scale-[1.02] transition-transform duration-300"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/40 to-transparent" />
-          </div>
-
-          {/* Content Details */}
-          <div className="p-6 sm:p-7 flex-1 flex flex-col justify-between w-full">
-            <div>
-              <div className="flex items-center gap-2">
-                <div
-                  className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
-                    selectedCategory === "chauffeur"
-                      ? "border-[#c8a05c] bg-[#c8a05c]"
-                      : "border-zinc-500"
-                  }`}
-                >
-                  {selectedCategory === "chauffeur" && (
-                    <div className="w-1.5 h-1.5 rounded-full bg-black" />
-                  )}
-                </div>
-                <h2 className="text-xl sm:text-2xl font-bold font-serif text-white group-hover:text-[#e8c683] transition-colors">
-                  Chauffeur Service
-                </h2>
-              </div>
-            </div>
-
-            <div className="mt-6 pt-4 border-t border-white/10 flex items-center justify-between text-xs w-full">
-              <span className="text-zinc-400">Ideal for:</span>
-              <span className="font-semibold text-zinc-200">
-                Executive, VIP &amp; Special Events
+          {/* Footer Info & Action */}
+          <div className="mt-4 pt-3.5 border-t border-slate-100 flex items-center justify-between gap-3 w-full">
+            <div className="text-xs">
+              <span className="text-slate-400 block text-[10px] uppercase font-semibold">Ideal for:</span>
+              <span className="font-medium text-slate-700 text-xs">
+                Executive, VIP &amp; Events
               </span>
             </div>
 
-            <div className="mt-4 pt-3 flex items-center justify-end w-full">
-              <button
-                type="button"
-                onClick={() => handleSelectCategory("chauffeur")}
-                className="cursor-pointer inline-flex items-center justify-center px-5 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider border border-[#c8a05c]/50 text-[#e8c683] bg-zinc-950/40 hover:bg-[#c8a05c] hover:text-black hover:border-[#c8a05c] hover:shadow-[0_0_20px_rgba(200,160,92,0.4)] active:scale-95 transition-all duration-300"
-              >
-                Book Chauffeur
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleSelectCategory("chauffeur");
+              }}
+              className="cursor-pointer shrink-0 inline-flex items-center justify-center px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider border border-[#c8a05c] text-[#0f172a] bg-amber-50 hover:bg-[#c8a05c] hover:text-white active:scale-95 transition-all duration-200"
+            >
+              Book Chauffeur →
+            </button>
           </div>
         </div>
 
         {/* Card 2: Taxi Service */}
         <div
-          className={`category-card group relative rounded-2xl overflow-hidden border transition-all duration-300 text-left flex flex-col bg-zinc-900/60 backdrop-blur-md ${
+          onClick={() => handleSelectCategory("taxi")}
+          className={`category-card group relative rounded-2xl p-5 border transition-all duration-300 text-left flex flex-col justify-between cursor-pointer bg-white shadow-sm hover:shadow-md ${
             selectedCategory === "taxi"
-              ? "border-amber-400 shadow-[0_0_35px_rgba(251,191,36,0.25)] ring-2 ring-amber-400/50 scale-[1.01]"
-              : "border-white/10 hover:border-amber-400/40 hover:bg-zinc-900/80"
+              ? "border-amber-400 ring-2 ring-amber-400/30 shadow-md bg-amber-50/20"
+              : "border-slate-200 hover:border-slate-300"
           }`}
         >
-          {/* Badge */}
-          <div className="absolute top-4 right-4 z-20">
-            <span className="px-3 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase bg-amber-400 text-black shadow-md">
+          {/* Header Row: Radio, Title & Badge */}
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div
+                className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                  selectedCategory === "taxi"
+                    ? "border-amber-500 bg-amber-500"
+                    : "border-slate-300 group-hover:border-amber-500"
+                }`}
+              >
+                {selectedCategory === "taxi" && (
+                  <div className="w-1.5 h-1.5 rounded-full bg-white" />
+                )}
+              </div>
+              <h2 className="text-base sm:text-lg font-bold font-serif text-slate-900 group-hover:text-amber-700 transition-colors">
+                Taxi Service
+              </h2>
+            </div>
+
+            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase bg-slate-100 text-slate-800 border border-slate-200 shrink-0">
               Fast &amp; Direct
             </span>
           </div>
 
-          {/* Taxi Image Container */}
-          <div className="relative h-48 sm:h-56 w-full overflow-hidden">
-            <Image
-              src="/taxi-card.jpg"
-              alt="Sydney Taxi and Maxi Taxi Service"
-              fill
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 450px"
-              className="object-cover object-center group-hover:scale-[1.02] transition-transform duration-300"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/40 to-transparent" />
-          </div>
-
-          {/* Content Details */}
-          <div className="p-6 sm:p-7 flex-1 flex flex-col justify-between w-full">
-            <div>
-              <div className="flex items-center gap-2">
-                <div
-                  className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
-                    selectedCategory === "taxi"
-                      ? "border-amber-400 bg-amber-400"
-                      : "border-zinc-500"
-                  }`}
-                >
-                  {selectedCategory === "taxi" && (
-                    <div className="w-1.5 h-1.5 rounded-full bg-black" />
-                  )}
-                </div>
-                <h2 className="text-xl sm:text-2xl font-bold font-serif text-white group-hover:text-amber-300 transition-colors">
-                  Taxi Service
-                </h2>
-              </div>
-            </div>
-
-            <div className="mt-6 pt-4 border-t border-white/10 flex items-center justify-between text-xs w-full">
-              <span className="text-zinc-400">Ideal for:</span>
-              <span className="font-semibold text-zinc-200">
-                Everyday Commutes &amp; Quick Trips
+          {/* Footer Info & Action */}
+          <div className="mt-4 pt-3.5 border-t border-slate-100 flex items-center justify-between gap-3 w-full">
+            <div className="text-xs">
+              <span className="text-slate-400 block text-[10px] uppercase font-semibold">Ideal for:</span>
+              <span className="font-medium text-slate-700 text-xs">
+                Commutes &amp; Quick Trips
               </span>
             </div>
 
-            <div className="mt-4 pt-3 flex items-center justify-end w-full">
-              <button
-                type="button"
-                onClick={() => handleSelectCategory("taxi")}
-                className="cursor-pointer inline-flex items-center justify-center px-5 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider border border-amber-400/50 text-amber-300 bg-zinc-950/40 hover:bg-amber-400 hover:text-black hover:border-amber-400 hover:shadow-[0_0_20px_rgba(251,191,36,0.4)] active:scale-95 transition-all duration-300"
-              >
-                Book Taxi
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleSelectCategory("taxi");
+              }}
+              className="cursor-pointer shrink-0 inline-flex items-center justify-center px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider border border-slate-300 text-slate-800 bg-slate-50 hover:bg-slate-900 hover:text-white hover:border-slate-900 active:scale-95 transition-all duration-200"
+            >
+              Book Taxi →
+            </button>
           </div>
         </div>
       </div>
 
-      <div className="mt-8 text-xs text-zinc-400 text-center">
-        Free cancellation up to 2 hours before pickup
+      <div className="mt-6 text-xs text-slate-500 text-center flex items-center gap-2">
+        <span className="text-emerald-600 font-bold">✓</span>
+        <span>Free cancellation up to 2 hours before pickup</span>
       </div>
     </div>
   );

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
+import HughesTripSummaryCard from "@/components/HughesTripSummaryCard";
 import {
   ConfirmationModal,
   DatePickerInput,
@@ -9,8 +10,6 @@ import {
   getTodayStr,
   PassengerDetailsForm,
   PickupLocationInput,
-  RouteFareSummary,
-  ServiceHeader,
   TimePickerInput,
 } from "@/utils";
 import { getStoredCustomer, saveCustomerBooking } from "@/utils/customerAuth";
@@ -40,7 +39,6 @@ export default function BookingForm({ category = "chauffeur" }) {
   const [pickupTime, setPickupTime] = useState("10:00");
   const [passengers, setPassengers] = useState(2);
   const [luggage, setLuggage] = useState(2);
-  const [flightNumber, setFlightNumber] = useState("");
   const [passengerName, setPassengerName] = useState("");
   const [passengerPhone, setPassengerPhone] = useState("");
   const [passengerEmail, setPassengerEmail] = useState("");
@@ -101,7 +99,9 @@ export default function BookingForm({ category = "chauffeur" }) {
           setPickupSuggestions(data.places);
         }
       })
-      .catch(() => { })
+      .catch((err) => {
+        console.warn("Could not load initial places:", err.message);
+      })
       .finally(() => {
         if (isMounted) setIsLoadingPickup(false);
       });
@@ -111,9 +111,9 @@ export default function BookingForm({ category = "chauffeur" }) {
     };
   }, []);
 
-  // Close dropdowns & popovers on outside click
+  // Close dropdowns on outside click
   useEffect(() => {
-    const handleClickOutside = (event) => {
+    function handleClickOutside(event) {
       if (
         pickupContainerRef.current &&
         !pickupContainerRef.current.contains(event.target)
@@ -138,12 +138,12 @@ export default function BookingForm({ category = "chauffeur" }) {
       ) {
         setShowTimePicker(false);
       }
-    };
+    }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // 2. Fetch connected destinations for a given pickup place
+  // 2. Fetch connected destinations when pickup is chosen
   const fetchDestinationsForPickup = useCallback(async (originPlace) => {
     if (!originPlace || !originPlace.trim()) {
       setConnectedDestinations([]);
@@ -159,20 +159,25 @@ export default function BookingForm({ category = "chauffeur" }) {
       );
       if (res.ok) {
         const data = await res.json();
-        const dests = data.places || [];
-        setConnectedDestinations(dests);
-        setDropoffSuggestions(dests);
-        return dests;
+        const rawList = data.destinations || data.places || [];
+        const list = Array.isArray(rawList) ? rawList : [];
+        setConnectedDestinations(list);
+        setDropoffSuggestions(list);
+        return list;
       }
+      setConnectedDestinations([]);
+      setDropoffSuggestions([]);
       return [];
     } catch {
+      setConnectedDestinations([]);
+      setDropoffSuggestions([]);
       return [];
     } finally {
       setIsLoadingDropoff(false);
     }
   }, []);
 
-  // Filter pickup locations when user types
+  // Filter pickup locations as user types
   const handlePickupChange = (value) => {
     setPickup(value);
     setPickupNotice("");
@@ -180,116 +185,121 @@ export default function BookingForm({ category = "chauffeur" }) {
 
     if (!value.trim()) {
       setPickupSuggestions(allPlaces);
-      setConnectedDestinations([]);
-      setDropoffSuggestions([]);
-      setDropoff("");
-      setRouteData(null);
       return;
     }
 
-    const lower = value.trim().toLowerCase();
-    const filtered = allPlaces.filter((p) => {
-      const nameMatch = p.name.toLowerCase().includes(lower);
-      const codeMatch = p.code && p.code.toLowerCase().includes(lower);
-      const addrMatch = p.address && p.address.toLowerCase().includes(lower);
-      return nameMatch || codeMatch || addrMatch;
+    const filtered = allPlaces.filter((item) => {
+      const name = typeof item === "string" ? item : item.name || "";
+      const addr = typeof item === "object" ? item.address || "" : "";
+      return (
+        name.toLowerCase().includes(value.toLowerCase()) ||
+        addr.toLowerCase().includes(value.toLowerCase())
+      );
     });
-
     setPickupSuggestions(filtered);
   };
 
-  // Select a Pickup location
-  const handleSelectPickup = async (place) => {
-    const placeName = typeof place === "string" ? place : place.name;
-    setPickup(placeName);
-    setShowPickupDropdown(false);
+  // Select pickup from suggestions
+  const handleSelectPickup = async (placeObj) => {
+    const selectedName =
+      typeof placeObj === "string" ? placeObj : placeObj.name;
+    setPickup(selectedName);
     setPickupNotice("");
+    setShowPickupDropdown(false);
 
-    // Reset dropoff when switching pickup
-    setDropoff("");
-    setRouteData(null);
+    const validDestinations = await fetchDestinationsForPickup(selectedName);
 
-    // Fetch connected destinations for this pickup
-    await fetchDestinationsForPickup(placeName);
-
-    // Automatically focus dropoff and show its connected dropdown
-    setShowDropoffDropdown(true);
-    setTimeout(() => {
-      dropoffInputRef.current?.focus();
-    }, 60);
+    if (dropoff) {
+      const isStillConnected = validDestinations.some((d) => {
+        const dName = typeof d === "string" ? d : d.name;
+        return dName.toLowerCase() === dropoff.toLowerCase();
+      });
+      if (!isStillConnected) {
+        setDropoff("");
+        setTimeout(() => {
+          dropoffInputRef.current?.focus();
+          setShowDropoffDropdown(true);
+        }, 150);
+      }
+    } else {
+      setTimeout(() => {
+        dropoffInputRef.current?.focus();
+        setShowDropoffDropdown(true);
+      }, 150);
+    }
   };
 
-  const handleClearPickup = () => {
-    setPickup("");
-    setDropoff("");
-    setConnectedDestinations([]);
-    setRouteData(null);
-    pickupInputRef.current?.focus();
-    setShowPickupDropdown(true);
-  };
-
-  // Filter dropoff destinations when user types
+  // Filter dropoff destinations
   const handleDropoffChange = (value) => {
     setDropoff(value);
     setShowDropoffDropdown(true);
 
     if (!value.trim()) {
       setDropoffSuggestions(connectedDestinations);
-      setRouteData(null);
       return;
     }
 
-    const lower = value.trim().toLowerCase();
-    const sourceList =
-      connectedDestinations.length > 0 ? connectedDestinations : allPlaces;
-
-    const filtered = sourceList.filter((p) => {
-      const nameMatch = p.name.toLowerCase().includes(lower);
-      const codeMatch = p.code && p.code.toLowerCase().includes(lower);
-      const addrMatch = p.address && p.address.toLowerCase().includes(lower);
-      return nameMatch || codeMatch || addrMatch;
+    const filtered = connectedDestinations.filter((item) => {
+      const name = typeof item === "string" ? item : item.name || "";
+      const addr = typeof item === "object" ? item.address || "" : "";
+      return (
+        name.toLowerCase().includes(value.toLowerCase()) ||
+        addr.toLowerCase().includes(value.toLowerCase())
+      );
     });
-
     setDropoffSuggestions(filtered);
   };
 
-  // Select a Drop-off location
-  const handleSelectDropoff = (place) => {
-    const placeName = typeof place === "string" ? place : place.name;
-    setDropoff(placeName);
+  // Select dropoff
+  const handleSelectDropoff = (destObj) => {
+    const selectedName = typeof destObj === "string" ? destObj : destObj.name;
+    setDropoff(selectedName);
     setShowDropoffDropdown(false);
+  };
+
+  // Swap pickup and dropoff
+  const handleSwapLocations = () => {
+    if (!pickup || !dropoff) return;
+    const oldPickup = pickup;
+    const oldDropoff = dropoff;
+    setPickup(oldDropoff);
+    setDropoff(oldPickup);
+    fetchDestinationsForPickup(oldDropoff);
+  };
+
+  const handleClearPickup = () => {
+    setPickup("");
+    setDropoff("");
+    setRouteData(null);
+    setPickupNotice("");
+    setPickupSuggestions(allPlaces);
+    setConnectedDestinations([]);
+    setDropoffSuggestions([]);
+    setShowPickupDropdown(false);
+    setShowDropoffDropdown(false);
+    pickupInputRef.current?.focus();
   };
 
   const handleClearDropoff = () => {
     setDropoff("");
     setRouteData(null);
+    setDropoffSuggestions(connectedDestinations);
+    setShowDropoffDropdown(false);
     dropoffInputRef.current?.focus();
-    handleDropoffFocus();
   };
 
-  // When user focuses or clicks Dropoff
-  const handleDropoffFocus = async () => {
+  const handleDropoffFocus = () => {
     if (!pickup.trim()) {
-      setShowDropoffDropdown(false);
-      setPickupNotice("Please choose your pickup location first");
-      if (pickupInputRef.current) {
-        pickupInputRef.current.focus();
-        setShowPickupDropdown(true);
-      }
+      setPickupNotice("Please choose a pick-up location first.");
+      pickupInputRef.current?.focus();
+      setShowPickupDropdown(true);
       return;
     }
-
     setShowDropoffDropdown(true);
     setShowPickupDropdown(false);
-
-    if (connectedDestinations.length === 0) {
-      await fetchDestinationsForPickup(pickup);
-    } else {
-      setDropoffSuggestions(connectedDestinations);
-    }
   };
 
-  // 3. Lookup route fare whenever both pickup & dropoff are populated
+  // 3. Look up live fare quote when both pickup & dropoff are selected
   useEffect(() => {
     if (!pickup.trim() || !dropoff.trim()) {
       setRouteData(null);
@@ -307,9 +317,9 @@ export default function BookingForm({ category = "chauffeur" }) {
         );
         if (res.ok) {
           const data = await res.json();
-          if (isMounted) {
-            setRouteData(data.route || null);
-          }
+          // Extract route document whether returned as data.route or root data
+          const resolved = data.route || data.place || data;
+          if (isMounted) setRouteData(resolved);
         } else {
           if (isMounted) setRouteData(null);
         }
@@ -320,73 +330,86 @@ export default function BookingForm({ category = "chauffeur" }) {
       }
     };
 
-    fetchFare();
+    const timer = setTimeout(fetchFare, 200);
     return () => {
       isMounted = false;
+      clearTimeout(timer);
     };
   }, [pickup, dropoff]);
 
-  // Calculate live fare
-  const calculateTotalFare = () => {
-    if (!routeData?.vehicleAndFares) {
+  // Dynamic Fare calculation - strictly from real database route
+  const calculatedFare = (() => {
+    if (!routeData) {
       return null;
     }
 
-    const vFares = routeData.vehicleAndFares;
-    let baseFare = 0;
-    let vehicleKey = "taxi";
+    const {
+      vehicleAndFares = {},
+      increaseFarePerPerson = {},
+      currency = "AUD",
+      distanceKm = null,
+      durationMin = null,
+    } = routeData;
 
-    if (isChauffeur) {
-      vehicleKey = "Chauffeur";
-      baseFare =
-        vFares.Chauffeur ??
-        vFares.chauffeur ??
-        vFares.executive ??
-        vFares.luxury ??
-        vFares.sedan ??
-        Object.values(vFares)[0] ??
-        85;
-    } else {
-      vehicleKey = "Taxi";
-      baseFare =
-        vFares.Taxi ??
-        vFares.taxi ??
-        Object.values(vFares)[1] ??
-        Object.values(vFares)[0] ??
-        65;
+    // Handle case-insensitive vehicle keys (e.g. Taxi/taxi, Chauffeur/chauffeur)
+    const faresObj =
+      vehicleAndFares instanceof Map
+        ? Object.fromEntries(vehicleAndFares)
+        : vehicleAndFares || {};
+
+    const findFare = (key) => {
+      const lower = key.toLowerCase();
+      for (const [k, v] of Object.entries(faresObj)) {
+        if (k.toLowerCase() === lower && typeof v === "number") return v;
+      }
+      return null;
+    };
+
+    const targetKey = isChauffeur ? "Chauffeur" : "Taxi";
+    const rawBaseFare = findFare(targetKey);
+
+    if (rawBaseFare === null || rawBaseFare === undefined) {
+      return null;
     }
 
-    const perPersonInc =
-      routeData.increaseFarePerPerson?.[vehicleKey] ||
-      routeData.increaseFarePerPerson?.[vehicleKey.toLowerCase()] ||
-      routeData.increaseFarePerPerson?.Taxi ||
-      routeData.increaseFarePerPerson?.taxi ||
-      10;
+    const incObj =
+      increaseFarePerPerson instanceof Map
+        ? Object.fromEntries(increaseFarePerPerson)
+        : increaseFarePerPerson || {};
 
+    const findInc = (key) => {
+      const lower = key.toLowerCase();
+      for (const [k, v] of Object.entries(incObj)) {
+        if (k.toLowerCase() === lower && typeof v === "number") return v;
+      }
+      return 0;
+    };
+
+    const perPersonExtra = findInc(targetKey);
     const extraPassengers = Math.max(0, passengers - 1);
-    const total = baseFare + extraPassengers * perPersonInc;
+    const totalFare = Math.round(rawBaseFare + extraPassengers * perPersonExtra);
 
     return {
-      total,
-      currency: routeData.currency || "AUD",
-      distanceKm: routeData.distanceKm,
-      durationMin: routeData.durationMin,
+      total: totalFare,
+      baseFare: rawBaseFare,
+      currency,
+      distanceKm,
+      durationMin,
     };
-  };
+  })();
 
-  const calculatedFare = calculateTotalFare();
-
-  // Form Submit
+  // 4. Form Submission
   const handleBookingSubmit = async (e) => {
     e.preventDefault();
+
     if (!pickup.trim()) {
-      alert("Please select a pickup location.");
+      alert("Please select a pick-up location.");
       pickupInputRef.current?.focus();
       return;
     }
 
     if (!dropoff.trim()) {
-      alert("Please select a drop-off destination.");
+      alert("Please select a destination / drop-off location.");
       dropoffInputRef.current?.focus();
       return;
     }
@@ -399,6 +422,11 @@ export default function BookingForm({ category = "chauffeur" }) {
       alert(
         "Please provide your contact name, mobile phone number, and email address.",
       );
+      return;
+    }
+
+    if (!calculatedFare || typeof calculatedFare.total !== "number") {
+      alert("Please wait until the route fare is calculated, or choose a valid route.");
       return;
     }
 
@@ -415,8 +443,9 @@ export default function BookingForm({ category = "chauffeur" }) {
         passengerPhone: passengerPhone.trim(),
         passengerEmail: passengerEmail.trim().toLowerCase(),
         fare: {
-          currency: calculatedFare?.currency || "AUD",
-          total: calculatedFare?.total || (isChauffeur ? 95 : 75),
+          currency: calculatedFare.currency || "AUD",
+          total: calculatedFare.total,
+          baseFare: calculatedFare.baseFare,
         },
       };
 
@@ -450,8 +479,14 @@ export default function BookingForm({ category = "chauffeur" }) {
     }
   };
 
+  const handleStartOver = () => {
+    setPickup("");
+    setDropoff("");
+    setRouteData(null);
+  };
+
   return (
-    <div className="w-full max-w-3xl flex flex-col items-center">
+    <div className="w-full max-w-7xl">
       {/* Confirmation Modal */}
       <ConfirmationModal
         confirmedBooking={confirmedBooking}
@@ -472,126 +507,234 @@ export default function BookingForm({ category = "chauffeur" }) {
         }}
       />
 
-      {/* Header, Switcher, Features & Quick Airports */}
-      <ServiceHeader
-        isChauffeur={isChauffeur}
-        pickup={pickup}
-        onQuickSelect={handleSelectPickup}
-      />
-
-      {/* Main Form */}
-      <form
-        onSubmit={handleBookingSubmit}
-        className="mt-8 w-full bg-zinc-900/60 backdrop-blur-xl border border-white/10 rounded-2xl p-6 sm:p-10 shadow-2xl space-y-6"
-      >
-        {/* Step 1: PICKUP LOCATION */}
-        <PickupLocationInput
-          pickup={pickup}
-          pickupInputRef={pickupInputRef}
-          pickupContainerRef={pickupContainerRef}
-          isLoadingPickup={isLoadingPickup}
-          pickupNotice={pickupNotice}
-          showPickupDropdown={showPickupDropdown}
-          pickupSuggestions={pickupSuggestions}
-          onPickupChange={handlePickupChange}
-          onSelectPickup={handleSelectPickup}
-          onClearPickup={handleClearPickup}
-          onFocus={() => {
-            setShowPickupDropdown(true);
-            setShowDropoffDropdown(false);
-          }}
-        />
-
-        {/* Step 2: DROP-OFF DESTINATION */}
-        <DropoffLocationInput
-          dropoff={dropoff}
-          dropoffInputRef={dropoffInputRef}
-          dropoffContainerRef={dropoffContainerRef}
-          pickup={pickup}
-          isLoadingDropoff={isLoadingDropoff}
-          showDropoffDropdown={showDropoffDropdown}
-          dropoffSuggestions={dropoffSuggestions}
-          onDropoffChange={handleDropoffChange}
-          onSelectDropoff={handleSelectDropoff}
-          onClearDropoff={handleClearDropoff}
-          onFocus={handleDropoffFocus}
-        />
-
-        {/* Live Route Fare & Distance Summary */}
-        <RouteFareSummary
-          isCalculatingFare={isCalculatingFare}
-          calculatedFare={calculatedFare}
-          pickup={pickup}
-          dropoff={dropoff}
-          isChauffeur={isChauffeur}
-        />
-
-        {/* Date & Time Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <DatePickerInput
-            pickupDate={pickupDate}
-            setPickupDate={setPickupDate}
-            todayStr={todayStr}
-            showDatePicker={showDatePicker}
-            setShowDatePicker={setShowDatePicker}
-            setShowTimePicker={setShowTimePicker}
-            calendarViewDate={calendarViewDate}
-            setCalendarViewDate={setCalendarViewDate}
-            dateContainerRef={dateContainerRef}
-            nativeDateInputRef={nativeDateInputRef}
-            isChauffeur={isChauffeur}
-          />
-
-          <TimePickerInput
-            pickupTime={pickupTime}
-            setPickupTime={setPickupTime}
-            showTimePicker={showTimePicker}
-            setShowTimePicker={setShowTimePicker}
-            timeContainerRef={timeContainerRef}
-            nativeTimeInputRef={nativeTimeInputRef}
-            isChauffeur={isChauffeur}
-          />
+      {/* Breadcrumb Steps Header */}
+      <div className="flex items-center gap-4 sm:gap-6 text-xs uppercase tracking-widest text-slate-400 font-semibold mb-5">
+        <div className="flex items-center gap-2 text-slate-900 font-bold">
+          <span className="w-5 h-5 rounded-full bg-slate-900 text-white flex items-center justify-center text-[11px] font-bold">
+            1
+          </span>
+          <span>Journey</span>
         </div>
+        <span className="text-slate-300">›</span>
+        <div className="flex items-center gap-2 text-slate-400">
+          <span className="w-5 h-5 rounded-full border border-slate-300 flex items-center justify-center text-[11px]">
+            2
+          </span>
+          <span>Vehicle &amp; Class</span>
+        </div>
+        <span className="text-slate-300">›</span>
+        <div className="flex items-center gap-2 text-slate-400">
+          <span className="w-5 h-5 rounded-full border border-slate-300 flex items-center justify-center text-[11px]">
+            3
+          </span>
+          <span>Details</span>
+        </div>
+      </div>
 
-        {/* Passenger, Luggage, Flight & Contact Details */}
-        <PassengerDetailsForm
-          passengers={passengers}
-          setPassengers={setPassengers}
-          luggage={luggage}
-          setLuggage={setLuggage}
-          flightNumber={flightNumber}
-          setFlightNumber={setFlightNumber}
-          passengerName={passengerName}
-          setPassengerName={setPassengerName}
-          passengerPhone={passengerPhone}
-          setPassengerPhone={setPassengerPhone}
-          passengerEmail={passengerEmail}
-          setPassengerEmail={setPassengerEmail}
-          isChauffeur={isChauffeur}
-        />
+      {/* Main Title & Hero Text */}
+      <div className="mb-7">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-serif font-bold text-slate-900 tracking-tight">
+              Where are we taking you?
+            </h1>
+            <p className="mt-2 text-xs sm:text-sm text-slate-500 max-w-xl">
+              Fixed price, free cancellation up to 2 hours before pick-up, and guaranteed free waiting time at every pickup.
+            </p>
+          </div>
 
-        {/* Action Buttons */}
-        <div className="pt-4 flex flex-col-reverse sm:flex-row items-center gap-4">
-          <Link
-            href="/book"
-            className="w-full sm:w-auto px-6 py-3.5 rounded-xl border border-white/20 hover:border-white text-zinc-300 hover:text-white font-semibold text-xs tracking-wider uppercase transition-colors text-center"
-          >
-            ← Back to Categories
-          </Link>
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className={`w-full sm:flex-1 py-4 px-8 rounded-xl font-bold uppercase tracking-wider text-sm text-black shadow-xl transition-all transform active:scale-95 cursor-pointer ${isChauffeur
-              ? "bg-gradient-to-r from-[#c8a05c] to-[#e4bf7e] hover:from-[#d6af70] hover:to-[#eed095] hover:shadow-[0_0_25px_rgba(200,160,92,0.4)]"
-              : "bg-gradient-to-r from-amber-400 to-amber-300 hover:from-amber-300 hover:to-amber-200 hover:shadow-[0_0_25px_rgba(251,191,36,0.4)]"
+          {/* Quick Vehicle Switcher Badge */}
+          <div className="flex items-center gap-1.5 p-1 bg-white rounded-xl border border-slate-200 shadow-xs text-xs">
+            <Link
+              href="/book/chauffeur"
+              className={`px-3.5 py-1.5 rounded-lg font-medium transition-all ${
+                isChauffeur
+                  ? "bg-slate-900 text-white font-bold shadow-xs"
+                  : "text-slate-600 hover:text-slate-900"
               }`}
-          >
-            {isSubmitting
-              ? "Confirming Booking..."
-              : "Confirm & Reserve Ride →"}
-          </button>
+            >
+              Chauffeur
+            </Link>
+            <Link
+              href="/book/taxi"
+              className={`px-3.5 py-1.5 rounded-lg font-medium transition-all ${
+                !isChauffeur
+                  ? "bg-amber-400 text-slate-950 font-bold shadow-xs"
+                  : "text-slate-600 hover:text-slate-900"
+              }`}
+            >
+              Taxi
+            </Link>
+          </div>
         </div>
-      </form>
+      </div>
+
+      {/* 2-Column Main Layout: Left = Form, Right = Hughes Live Summary Card */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
+        {/* LEFT COLUMN: Booking Configurator Card (Span 7) */}
+        <div className="lg:col-span-7">
+          <form
+            onSubmit={handleBookingSubmit}
+            className="rounded-2xl bg-white border border-slate-200/90 p-6 sm:p-7 space-y-5 shadow-lg text-slate-900"
+          >
+            {/* Connected Route Input Section */}
+            <div className="relative space-y-3">
+              {/* Pickup Location */}
+              <PickupLocationInput
+                pickup={pickup}
+                pickupInputRef={pickupInputRef}
+                pickupContainerRef={pickupContainerRef}
+                isLoadingPickup={isLoadingPickup}
+                pickupNotice={pickupNotice}
+                showPickupDropdown={showPickupDropdown}
+                pickupSuggestions={pickupSuggestions}
+                onPickupChange={handlePickupChange}
+                onSelectPickup={handleSelectPickup}
+                onClearPickup={handleClearPickup}
+                onFocus={() => {
+                  setShowPickupDropdown(true);
+                  setShowDropoffDropdown(false);
+                }}
+              />
+
+              {/* Swap Button between Pickup & Dropoff */}
+              <div className="flex justify-end pr-2 -my-2 relative z-10">
+                <button
+                  type="button"
+                  onClick={handleSwapLocations}
+                  title="Swap Pick-up and Destination"
+                  className="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 flex items-center justify-center transition-all cursor-pointer shadow-xs text-xs font-bold"
+                >
+                  ⇅
+                </button>
+              </div>
+
+              {/* Dropoff Destination */}
+              <DropoffLocationInput
+                dropoff={dropoff}
+                dropoffInputRef={dropoffInputRef}
+                dropoffContainerRef={dropoffContainerRef}
+                pickup={pickup}
+                isLoadingDropoff={isLoadingDropoff}
+                showDropoffDropdown={showDropoffDropdown}
+                dropoffSuggestions={dropoffSuggestions}
+                onDropoffChange={handleDropoffChange}
+                onSelectDropoff={handleSelectDropoff}
+                onClearDropoff={handleClearDropoff}
+                onFocus={handleDropoffFocus}
+              />
+            </div>
+
+            {/* Date, Time & Passenger Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <DatePickerInput
+                  pickupDate={pickupDate}
+                  setPickupDate={setPickupDate}
+                  todayStr={todayStr}
+                  showDatePicker={showDatePicker}
+                  setShowDatePicker={setShowDatePicker}
+                  setShowTimePicker={setShowTimePicker}
+                  calendarViewDate={calendarViewDate}
+                  setCalendarViewDate={setCalendarViewDate}
+                  dateContainerRef={dateContainerRef}
+                  nativeDateInputRef={nativeDateInputRef}
+                  isChauffeur={isChauffeur}
+                />
+              </div>
+
+              <div>
+                <TimePickerInput
+                  pickupTime={pickupTime}
+                  setPickupTime={setPickupTime}
+                  showTimePicker={showTimePicker}
+                  setShowTimePicker={setShowTimePicker}
+                  timeContainerRef={timeContainerRef}
+                  nativeTimeInputRef={nativeTimeInputRef}
+                  isChauffeur={isChauffeur}
+                />
+              </div>
+
+              {/* Passengers Quick Stepper */}
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5">
+                  Passengers
+                </label>
+                <div className="flex items-center justify-between py-1.5 px-3 rounded-xl bg-slate-50 border border-slate-300 h-[42px]">
+                  <button
+                    type="button"
+                    onClick={() => setPassengers((prev) => Math.max(1, prev - 1))}
+                    className="w-6 h-6 rounded-md bg-white border border-slate-200 hover:bg-slate-100 text-slate-800 font-bold flex items-center justify-center cursor-pointer transition-colors text-xs"
+                  >
+                    −
+                  </button>
+                  <span className="text-xs font-bold text-slate-900 font-mono">
+                    {passengers}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setPassengers((prev) => Math.min(8, prev + 1))}
+                    className="w-6 h-6 rounded-md bg-white border border-slate-200 hover:bg-slate-100 text-slate-800 font-bold flex items-center justify-center cursor-pointer transition-colors text-xs"
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Passenger Contact & Bag Details */}
+            <PassengerDetailsForm
+              passengers={passengers}
+              setPassengers={setPassengers}
+              luggage={luggage}
+              setLuggage={setLuggage}
+              passengerName={passengerName}
+              setPassengerName={setPassengerName}
+              passengerPhone={passengerPhone}
+              setPassengerPhone={setPassengerPhone}
+              passengerEmail={passengerEmail}
+              setPassengerEmail={setPassengerEmail}
+              isChauffeur={isChauffeur}
+            />
+
+            {/* Bottom Form Actions */}
+            <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3">
+              <button
+                type="button"
+                onClick={handleStartOver}
+                className="text-xs text-slate-500 hover:text-slate-900 underline cursor-pointer"
+              >
+                Start over
+              </button>
+
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full sm:w-auto px-7 py-3 rounded-xl font-bold uppercase tracking-wider text-xs text-white bg-slate-900 hover:bg-slate-800 shadow-md hover:shadow-lg transition-all active:scale-95 cursor-pointer"
+              >
+                {isSubmitting
+                  ? "Confirming Booking..."
+                  : "Confirm & Reserve Ride →"}
+              </button>
+            </div>
+          </form>
+        </div>
+
+        {/* RIGHT COLUMN: Hughes Live Visual Trip Summary Card (Span 5) */}
+        <div className="lg:col-span-5 sticky top-6">
+          <HughesTripSummaryCard
+            pickup={pickup}
+            dropoff={dropoff}
+            pickupDate={pickupDate}
+            pickupTime={pickupTime}
+            passengers={passengers}
+            luggage={luggage}
+            calculatedFare={calculatedFare}
+            isCalculatingFare={isCalculatingFare}
+            isChauffeur={isChauffeur}
+          />
+        </div>
+      </div>
     </div>
   );
 }

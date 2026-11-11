@@ -33,7 +33,7 @@ export default function ConfirmationModal({
   // Card region state: 'domestic' (1.65% + $0.30) vs 'international' (3.5% + $0.30)
   const [cardType, setCardType] = useState("domestic");
 
-  const baseFare = confirmedBooking?.fare?.total || calculatedFare?.total || 85;
+  const baseFare = confirmedBooking?.fare?.total || calculatedFare?.total || 0;
   const fareCurrency =
     confirmedBooking?.fare?.currency || calculatedFare?.currency || "AUD";
 
