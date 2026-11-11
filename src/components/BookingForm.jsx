@@ -541,6 +541,16 @@ export default function BookingForm({ category = "chauffeur" }) {
           <HughesTripSummaryCard
             pickup={pickupDisplayName}
             dropoff={dropoffDisplayName}
+            pickupCoords={
+              pickupPlace?.lat != null && pickupPlace?.lng != null
+                ? { lat: pickupPlace.lat, lng: pickupPlace.lng }
+                : null
+            }
+            dropoffCoords={
+              dropoffPlace?.lat != null && dropoffPlace?.lng != null
+                ? { lat: dropoffPlace.lat, lng: dropoffPlace.lng }
+                : null
+            }
             isChauffeur={isChauffeur}
             pickupDate={pickupDate}
             pickupTime={pickupTime}
