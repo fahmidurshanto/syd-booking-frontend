@@ -173,7 +173,7 @@ export default function Home() {
 
             {/* MANAGE BOOKING outlined button */}
             <Link
-              href={ADMIN_LOGIN_URL}
+              href="/customer/bookings"
               className="hero-cta-btn px-6 sm:px-7 py-3.5 text-xs sm:text-sm font-semibold tracking-wider uppercase rounded border border-white/70 hover:border-white text-white hover:bg-white/10 shadow-sm transition-all duration-200 hover:scale-[1.02] active:scale-95 backdrop-blur-sm"
             >
               Manage Booking
@@ -191,7 +191,7 @@ export default function Home() {
           {/* Understated vehicle tracking link */}
           <div className="mt-4 sm:mt-5">
             <Link
-              href="/book"
+              href="/customer/bookings"
               className="text-xs sm:text-sm text-zinc-300 hover:text-white underline underline-offset-4 decoration-zinc-500 hover:decoration-white transition-colors tracking-wide font-normal inline-flex items-center gap-1.5"
             >
               <span>Track my Vehicle</span>

@@ -357,16 +357,33 @@ export default function BookingForm({ category = "chauffeur" }) {
         ? Object.fromEntries(vehicleAndFares)
         : vehicleAndFares || {};
 
-    const findFare = (key) => {
-      const lower = key.toLowerCase();
-      for (const [k, v] of Object.entries(faresObj)) {
-        if (k.toLowerCase() === lower && typeof v === "number") return v;
+    // Look up fare based on category with smart matching for backend schema tiers
+    const findFare = () => {
+      // 1. Direct matches
+      if (isChauffeur) {
+        // Chauffeur matches 'Chauffeur', 'executive', 'luxury', 'suv'
+        for (const k of ["chauffeur", "executive", "luxury", "suv"]) {
+          for (const [prop, val] of Object.entries(faresObj)) {
+            if (prop.toLowerCase() === k && typeof val === "number") return val;
+          }
+        }
+      } else {
+        // Taxi matches 'taxi', 'standard'
+        for (const k of ["taxi", "standard"]) {
+          for (const [prop, val] of Object.entries(faresObj)) {
+            if (prop.toLowerCase() === k && typeof val === "number") return val;
+          }
+        }
+      }
+
+      // 2. Fallback to any first numeric fare in vehicleAndFares
+      for (const val of Object.values(faresObj)) {
+        if (typeof val === "number") return val;
       }
       return null;
     };
 
-    const targetKey = isChauffeur ? "Chauffeur" : "Taxi";
-    const rawBaseFare = findFare(targetKey);
+    const rawBaseFare = findFare();
 
     if (rawBaseFare === null || rawBaseFare === undefined) {
       return null;
@@ -377,15 +394,22 @@ export default function BookingForm({ category = "chauffeur" }) {
         ? Object.fromEntries(increaseFarePerPerson)
         : increaseFarePerPerson || {};
 
-    const findInc = (key) => {
-      const lower = key.toLowerCase();
-      for (const [k, v] of Object.entries(incObj)) {
-        if (k.toLowerCase() === lower && typeof v === "number") return v;
+    const findInc = () => {
+      const searchKeys = isChauffeur
+        ? ["chauffeur", "executive", "luxury", "suv"]
+        : ["taxi", "standard"];
+      for (const k of searchKeys) {
+        for (const [prop, val] of Object.entries(incObj)) {
+          if (prop.toLowerCase() === k && typeof val === "number") return val;
+        }
+      }
+      for (const val of Object.values(incObj)) {
+        if (typeof val === "number") return val;
       }
       return 0;
     };
 
-    const perPersonExtra = findInc(targetKey);
+    const perPersonExtra = findInc();
     const extraPassengers = Math.max(0, passengers - 1);
     const totalFare = Math.round(rawBaseFare + extraPassengers * perPersonExtra);
 
