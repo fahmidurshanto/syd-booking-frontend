@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import HughesTripSummaryCard from "@/components/HughesTripSummaryCard";
 import {
   ConfirmationModal,
@@ -19,19 +19,9 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 export default function BookingForm({ category = "chauffeur" }) {
   const isChauffeur = category === "chauffeur";
 
-  // Location inputs & autocomplete state
-  const [pickup, setPickup] = useState("");
-  const [dropoff, setDropoff] = useState("");
-  const [allPlaces, setAllPlaces] = useState([]);
-  const [pickupSuggestions, setPickupSuggestions] = useState([]);
-  const [connectedDestinations, setConnectedDestinations] = useState([]);
-  const [dropoffSuggestions, setDropoffSuggestions] = useState([]);
-
-  const [showPickupDropdown, setShowPickupDropdown] = useState(false);
-  const [showDropoffDropdown, setShowDropoffDropdown] = useState(false);
-  const [isLoadingPickup, setIsLoadingPickup] = useState(false);
-  const [isLoadingDropoff, setIsLoadingDropoff] = useState(false);
-  const [pickupNotice, setPickupNotice] = useState("");
+  // Location inputs: state stores object { name, fullAddress, lat, lng } or string
+  const [pickupPlace, setPickupPlace] = useState(null);
+  const [dropoffPlace, setDropoffPlace] = useState(null);
 
   // Booking Form State
   const [todayStr, setTodayStr] = useState("");
@@ -47,6 +37,19 @@ export default function BookingForm({ category = "chauffeur" }) {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [calendarViewDate, setCalendarViewDate] = useState(null);
+
+  // Calculated Fare Data from Backend
+  const [fareData, setFareData] = useState(null);
+  const [isCalculatingFare, setIsCalculatingFare] = useState(false);
+
+  // Booking submission & confirmation state
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [confirmedBooking, setConfirmedBooking] = useState(null);
+
+  const dateContainerRef = useRef(null);
+  const timeContainerRef = useRef(null);
+  const nativeDateInputRef = useRef(null);
+  const nativeTimeInputRef = useRef(null);
 
   // Initialize client date on mount to prevent SSR prerender mismatch
   useEffect(() => {
@@ -70,62 +73,9 @@ export default function BookingForm({ category = "chauffeur" }) {
     }
   }, []);
 
-  // Route Quote State
-  const [routeData, setRouteData] = useState(null);
-  const [isCalculatingFare, setIsCalculatingFare] = useState(false);
-
-  // Booking submission & confirmation state
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [confirmedBooking, setConfirmedBooking] = useState(null);
-
-  const pickupContainerRef = useRef(null);
-  const dropoffContainerRef = useRef(null);
-  const pickupInputRef = useRef(null);
-  const dropoffInputRef = useRef(null);
-  const dateContainerRef = useRef(null);
-  const timeContainerRef = useRef(null);
-  const nativeDateInputRef = useRef(null);
-  const nativeTimeInputRef = useRef(null);
-
-  // 1. Initial load: fetch all unique route places
-  useEffect(() => {
-    let isMounted = true;
-    setIsLoadingPickup(true);
-    fetch(`${API_BASE}/routes/all?details=true`)
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (isMounted && data?.places) {
-          setAllPlaces(data.places);
-          setPickupSuggestions(data.places);
-        }
-      })
-      .catch((err) => {
-        console.warn("Could not load initial places:", err.message);
-      })
-      .finally(() => {
-        if (isMounted) setIsLoadingPickup(false);
-      });
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
   // Close dropdowns on outside click
   useEffect(() => {
     function handleClickOutside(event) {
-      if (
-        pickupContainerRef.current &&
-        !pickupContainerRef.current.contains(event.target)
-      ) {
-        setShowPickupDropdown(false);
-      }
-      if (
-        dropoffContainerRef.current &&
-        !dropoffContainerRef.current.contains(event.target)
-      ) {
-        setShowDropoffDropdown(false);
-      }
       if (
         dateContainerRef.current &&
         !dateContainerRef.current.contains(event.target)
@@ -143,298 +93,107 @@ export default function BookingForm({ category = "chauffeur" }) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // 2. Fetch connected destinations when pickup is chosen
-  const fetchDestinationsForPickup = useCallback(async (originPlace) => {
-    if (!originPlace || !originPlace.trim()) {
-      setConnectedDestinations([]);
-      setDropoffSuggestions([]);
-      return [];
-    }
-    try {
-      setIsLoadingDropoff(true);
-      const res = await fetch(
-        `${API_BASE}/routes/destinations?from=${encodeURIComponent(
-          originPlace.trim(),
-        )}`,
-      );
-      if (res.ok) {
-        const data = await res.json();
-        const rawList = data.destinations || data.places || [];
-        const list = Array.isArray(rawList) ? rawList : [];
-        setConnectedDestinations(list);
-        setDropoffSuggestions(list);
-        return list;
-      }
-      setConnectedDestinations([]);
-      setDropoffSuggestions([]);
-      return [];
-    } catch {
-      setConnectedDestinations([]);
-      setDropoffSuggestions([]);
-      return [];
-    } finally {
-      setIsLoadingDropoff(false);
-    }
-  }, []);
-
-  // Filter pickup locations as user types
-  const handlePickupChange = (value) => {
-    setPickup(value);
-    setPickupNotice("");
-    setShowPickupDropdown(true);
-
-    if (!value.trim()) {
-      setPickupSuggestions(allPlaces);
-      return;
-    }
-
-    const filtered = allPlaces.filter((item) => {
-      const name = typeof item === "string" ? item : item.name || "";
-      const addr = typeof item === "object" ? item.address || "" : "";
-      return (
-        name.toLowerCase().includes(value.toLowerCase()) ||
-        addr.toLowerCase().includes(value.toLowerCase())
-      );
-    });
-    setPickupSuggestions(filtered);
+  // Handlers for location selection
+  const handleSelectPickup = (place) => {
+    setPickupPlace(place);
   };
 
-  // Select pickup from suggestions
-  const handleSelectPickup = async (placeObj) => {
-    const selectedName =
-      typeof placeObj === "string" ? placeObj : placeObj.name;
-    setPickup(selectedName);
-    setPickupNotice("");
-    setShowPickupDropdown(false);
-
-    const validDestinations = await fetchDestinationsForPickup(selectedName);
-
-    if (dropoff) {
-      const isStillConnected = validDestinations.some((d) => {
-        const dName = typeof d === "string" ? d : d.name;
-        return dName.toLowerCase() === dropoff.toLowerCase();
-      });
-      if (!isStillConnected) {
-        setDropoff("");
-        setTimeout(() => {
-          dropoffInputRef.current?.focus();
-          setShowDropoffDropdown(true);
-        }, 150);
-      }
-    } else {
-      setTimeout(() => {
-        dropoffInputRef.current?.focus();
-        setShowDropoffDropdown(true);
-      }, 150);
-    }
+  const handleClearPickup = () => {
+    setPickupPlace(null);
+    setFareData(null);
   };
 
-  // Filter dropoff destinations
-  const handleDropoffChange = (value) => {
-    setDropoff(value);
-    setShowDropoffDropdown(true);
-
-    if (!value.trim()) {
-      setDropoffSuggestions(connectedDestinations);
-      return;
-    }
-
-    const filtered = connectedDestinations.filter((item) => {
-      const name = typeof item === "string" ? item : item.name || "";
-      const addr = typeof item === "object" ? item.address || "" : "";
-      return (
-        name.toLowerCase().includes(value.toLowerCase()) ||
-        addr.toLowerCase().includes(value.toLowerCase())
-      );
-    });
-    setDropoffSuggestions(filtered);
+  const handleSelectDropoff = (place) => {
+    setDropoffPlace(place);
   };
 
-  // Select dropoff
-  const handleSelectDropoff = (destObj) => {
-    const selectedName = typeof destObj === "string" ? destObj : destObj.name;
-    setDropoff(selectedName);
-    setShowDropoffDropdown(false);
+  const handleClearDropoff = () => {
+    setDropoffPlace(null);
+    setFareData(null);
   };
 
   // Swap pickup and dropoff
   const handleSwapLocations = () => {
-    if (!pickup || !dropoff) return;
-    const oldPickup = pickup;
-    const oldDropoff = dropoff;
-    setPickup(oldDropoff);
-    setDropoff(oldPickup);
-    fetchDestinationsForPickup(oldDropoff);
+    if (!pickupPlace || !dropoffPlace) return;
+    const oldP = pickupPlace;
+    const oldD = dropoffPlace;
+    setPickupPlace(oldD);
+    setDropoffPlace(oldP);
   };
 
-  const handleClearPickup = () => {
-    setPickup("");
-    setDropoff("");
-    setRouteData(null);
-    setPickupNotice("");
-    setPickupSuggestions(allPlaces);
-    setConnectedDestinations([]);
-    setDropoffSuggestions([]);
-    setShowPickupDropdown(false);
-    setShowDropoffDropdown(false);
-    pickupInputRef.current?.focus();
-  };
-
-  const handleClearDropoff = () => {
-    setDropoff("");
-    setRouteData(null);
-    setDropoffSuggestions(connectedDestinations);
-    setShowDropoffDropdown(false);
-    dropoffInputRef.current?.focus();
-  };
-
-  const handleDropoffFocus = () => {
-    if (!pickup.trim()) {
-      setPickupNotice("Please choose a pick-up location first.");
-      pickupInputRef.current?.focus();
-      setShowPickupDropdown(true);
-      return;
-    }
-    setShowDropoffDropdown(true);
-    setShowPickupDropdown(false);
-  };
-
-  // 3. Look up live fare quote when both pickup & dropoff are selected
+  // Fetch distance-based fare whenever locations or vehicle changes
   useEffect(() => {
-    if (!pickup.trim() || !dropoff.trim()) {
-      setRouteData(null);
+    if (
+      !pickupPlace?.lat ||
+      !pickupPlace?.lng ||
+      !dropoffPlace?.lat ||
+      !dropoffPlace?.lng
+    ) {
+      setFareData(null);
       return;
     }
 
     let isMounted = true;
-    const fetchFare = async () => {
+    const fetchDistanceFare = async () => {
       try {
         setIsCalculatingFare(true);
-        const res = await fetch(
-          `${API_BASE}/routes/lookup?firstPlace=${encodeURIComponent(
-            pickup.trim(),
-          )}&lastPlace=${encodeURIComponent(dropoff.trim())}`,
-        );
+        const params = new URLSearchParams({
+          fromLat: pickupPlace.lat,
+          fromLng: pickupPlace.lng,
+          toLat: dropoffPlace.lat,
+          toLng: dropoffPlace.lng,
+          vehicle: isChauffeur ? "chauffeur" : "taxi",
+          pickupTime: `${pickupDate}T${pickupTime}`,
+          toName: dropoffPlace.name || "",
+        });
+
+        const res = await fetch(`${API_BASE}/fare/calculate?${params}`);
         if (res.ok) {
           const data = await res.json();
-          // Extract route document whether returned as data.route or root data
-          const resolved = data.route || data.place || data;
-          if (isMounted) setRouteData(resolved);
+          if (isMounted && data.success) {
+            setFareData(data);
+          }
         } else {
-          if (isMounted) setRouteData(null);
+          if (isMounted) setFareData(null);
         }
-      } catch {
-        if (isMounted) setRouteData(null);
+      } catch (err) {
+        console.warn("Fare calculate error:", err);
+        if (isMounted) setFareData(null);
       } finally {
         if (isMounted) setIsCalculatingFare(false);
       }
     };
 
-    const timer = setTimeout(fetchFare, 200);
+    const timer = setTimeout(fetchDistanceFare, 250);
     return () => {
       isMounted = false;
       clearTimeout(timer);
     };
-  }, [pickup, dropoff]);
+  }, [pickupPlace, dropoffPlace, isChauffeur, pickupDate, pickupTime]);
 
-  // Dynamic Fare calculation - strictly from real database route
-  const calculatedFare = (() => {
-    if (!routeData) {
-      return null;
-    }
-
-    const {
-      vehicleAndFares = {},
-      increaseFarePerPerson = {},
-      currency = "AUD",
-      distanceKm = null,
-      durationMin = null,
-    } = routeData;
-
-    // Handle case-insensitive vehicle keys (e.g. Taxi/taxi, Chauffeur/chauffeur)
-    const faresObj =
-      vehicleAndFares instanceof Map
-        ? Object.fromEntries(vehicleAndFares)
-        : vehicleAndFares || {};
-
-    // Look up fare based on category with smart matching for backend schema tiers
-    const findFare = () => {
-      // 1. Direct matches
-      if (isChauffeur) {
-        // Chauffeur matches 'Chauffeur', 'executive', 'luxury', 'suv'
-        for (const k of ["chauffeur", "executive", "luxury", "suv"]) {
-          for (const [prop, val] of Object.entries(faresObj)) {
-            if (prop.toLowerCase() === k && typeof val === "number") return val;
-          }
-        }
-      } else {
-        // Taxi matches 'taxi', 'standard'
-        for (const k of ["taxi", "standard"]) {
-          for (const [prop, val] of Object.entries(faresObj)) {
-            if (prop.toLowerCase() === k && typeof val === "number") return val;
-          }
-        }
+  // Derived fare object for UI & modal
+  const calculatedFare = fareData
+    ? {
+        total: fareData.fare,
+        baseFare: fareData.breakdown?.baseFare || fareData.fare,
+        currency: fareData.currency || "AUD",
+        distanceKm: fareData.distanceKm,
+        durationMin: fareData.durationMin,
+        breakdown: fareData.breakdown,
       }
+    : null;
 
-      // 2. Fallback to any first numeric fare in vehicleAndFares
-      for (const val of Object.values(faresObj)) {
-        if (typeof val === "number") return val;
-      }
-      return null;
-    };
-
-    const rawBaseFare = findFare();
-
-    if (rawBaseFare === null || rawBaseFare === undefined) {
-      return null;
-    }
-
-    const incObj =
-      increaseFarePerPerson instanceof Map
-        ? Object.fromEntries(increaseFarePerPerson)
-        : increaseFarePerPerson || {};
-
-    const findInc = () => {
-      const searchKeys = isChauffeur
-        ? ["chauffeur", "executive", "luxury", "suv"]
-        : ["taxi", "standard"];
-      for (const k of searchKeys) {
-        for (const [prop, val] of Object.entries(incObj)) {
-          if (prop.toLowerCase() === k && typeof val === "number") return val;
-        }
-      }
-      for (const val of Object.values(incObj)) {
-        if (typeof val === "number") return val;
-      }
-      return 0;
-    };
-
-    const perPersonExtra = findInc();
-    const extraPassengers = Math.max(0, passengers - 1);
-    const totalFare = Math.round(rawBaseFare + extraPassengers * perPersonExtra);
-
-    return {
-      total: totalFare,
-      baseFare: rawBaseFare,
-      currency,
-      distanceKm,
-      durationMin,
-    };
-  })();
-
-  // 4. Form Submission
+  // Form Submission
   const handleBookingSubmit = async (e) => {
     e.preventDefault();
 
-    if (!pickup.trim()) {
+    if (!pickupPlace?.name) {
       alert("Please select a pick-up location.");
-      pickupInputRef.current?.focus();
       return;
     }
 
-    if (!dropoff.trim()) {
-      alert("Please select a destination / drop-off location.");
-      dropoffInputRef.current?.focus();
+    if (!dropoffPlace?.name) {
+      alert("Please select a drop-off destination.");
       return;
     }
 
@@ -444,21 +203,31 @@ export default function BookingForm({ category = "chauffeur" }) {
       !passengerEmail.trim()
     ) {
       alert(
-        "Please provide your contact name, mobile phone number, and email address.",
+        "Please provide your contact name, mobile phone number, and email address."
       );
       return;
     }
 
     if (!calculatedFare || typeof calculatedFare.total !== "number") {
-      alert("Please wait until the route fare is calculated, or choose a valid route.");
+      alert("Please wait until the trip fare is calculated, or choose valid locations.");
       return;
     }
 
     try {
       setIsSubmitting(true);
       const bookingPayload = {
-        pickup: pickup.trim(),
-        dropoff: dropoff.trim(),
+        pickup: {
+          name: pickupPlace.name,
+          address: pickupPlace.fullAddress || pickupPlace.name,
+          lat: pickupPlace.lat,
+          lng: pickupPlace.lng,
+        },
+        dropoff: {
+          name: dropoffPlace.name,
+          address: dropoffPlace.fullAddress || dropoffPlace.name,
+          lat: dropoffPlace.lat,
+          lng: dropoffPlace.lng,
+        },
         pickupTime: new Date(`${pickupDate}T${pickupTime}`),
         passengers,
         luggage,
@@ -470,6 +239,8 @@ export default function BookingForm({ category = "chauffeur" }) {
           currency: calculatedFare.currency || "AUD",
           total: calculatedFare.total,
           baseFare: calculatedFare.baseFare,
+          distanceKm: calculatedFare.distanceKm,
+          durationMin: calculatedFare.durationMin,
         },
       };
 
@@ -483,7 +254,8 @@ export default function BookingForm({ category = "chauffeur" }) {
         const data = await res.json();
         const finalBooking = data.booking || {
           ...bookingPayload,
-          bookingNumber: "SYD-" + Math.random().toString(36).substring(2, 8).toUpperCase(),
+          bookingNumber:
+            "SYD-" + Math.random().toString(36).substring(2, 8).toUpperCase(),
           status: "confirmed",
         };
         setConfirmedBooking(finalBooking);
@@ -491,23 +263,20 @@ export default function BookingForm({ category = "chauffeur" }) {
       } else {
         const errorData = await res.json().catch(() => ({}));
         alert(
-          `Booking Notice: ${errorData.message || "Failed to create booking. Please try again."}`,
+          `Booking Notice: ${errorData.message || "Failed to create booking. Please try again."}`
         );
       }
     } catch {
       alert(
-        "Unable to reach the booking server. Please check your connection and try again.",
+        "Unable to reach the booking server. Please check your connection and try again."
       );
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleStartOver = () => {
-    setPickup("");
-    setDropoff("");
-    setRouteData(null);
-  };
+  const pickupDisplayName = pickupPlace?.name || "";
+  const dropoffDisplayName = dropoffPlace?.name || "";
 
   return (
     <div className="w-full max-w-7xl">
@@ -526,8 +295,9 @@ export default function BookingForm({ category = "chauffeur" }) {
         onClose={() => setConfirmedBooking(null)}
         onReset={() => {
           setConfirmedBooking(null);
-          setPickup("");
-          setDropoff("");
+          setPickupPlace(null);
+          setDropoffPlace(null);
+          setFareData(null);
         }}
       />
 
@@ -563,7 +333,7 @@ export default function BookingForm({ category = "chauffeur" }) {
               Where are we taking you?
             </h1>
             <p className="mt-2 text-xs sm:text-sm text-slate-500 max-w-xl">
-              Fixed price, free cancellation up to 2 hours before pick-up, and guaranteed free waiting time at every pickup.
+              Transparent upfront pricing, distance-based travel calculation, and free cancellation up to 2 hours before pick-up.
             </p>
           </div>
 
@@ -605,20 +375,9 @@ export default function BookingForm({ category = "chauffeur" }) {
             <div className="relative space-y-3">
               {/* Pickup Location */}
               <PickupLocationInput
-                pickup={pickup}
-                pickupInputRef={pickupInputRef}
-                pickupContainerRef={pickupContainerRef}
-                isLoadingPickup={isLoadingPickup}
-                pickupNotice={pickupNotice}
-                showPickupDropdown={showPickupDropdown}
-                pickupSuggestions={pickupSuggestions}
-                onPickupChange={handlePickupChange}
+                pickup={pickupDisplayName}
                 onSelectPickup={handleSelectPickup}
                 onClearPickup={handleClearPickup}
-                onFocus={() => {
-                  setShowPickupDropdown(true);
-                  setShowDropoffDropdown(false);
-                }}
               />
 
               {/* Swap Button between Pickup & Dropoff */}
@@ -635,19 +394,35 @@ export default function BookingForm({ category = "chauffeur" }) {
 
               {/* Dropoff Destination */}
               <DropoffLocationInput
-                dropoff={dropoff}
-                dropoffInputRef={dropoffInputRef}
-                dropoffContainerRef={dropoffContainerRef}
-                pickup={pickup}
-                isLoadingDropoff={isLoadingDropoff}
-                showDropoffDropdown={showDropoffDropdown}
-                dropoffSuggestions={dropoffSuggestions}
-                onDropoffChange={handleDropoffChange}
+                dropoff={dropoffDisplayName}
                 onSelectDropoff={handleSelectDropoff}
                 onClearDropoff={handleClearDropoff}
-                onFocus={handleDropoffFocus}
               />
             </div>
+
+            {/* Distance / Duration readout strip when calculated */}
+            {fareData && (
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 flex items-center justify-between text-xs text-slate-600">
+                <div className="flex items-center gap-2">
+                  <span className="text-slate-400">📏</span>
+                  <span>
+                    Distance:{" "}
+                    <strong className="text-slate-900 font-semibold">
+                      {fareData.distanceKm} km
+                    </strong>
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-slate-400">⏱️</span>
+                  <span>
+                    Est. Duration:{" "}
+                    <strong className="text-slate-900 font-semibold">
+                      {fareData.durationMin} mins
+                    </strong>
+                  </span>
+                </div>
+              </div>
+            )}
 
             {/* Date, Time & Passenger Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -718,44 +493,61 @@ export default function BookingForm({ category = "chauffeur" }) {
               setPassengerPhone={setPassengerPhone}
               passengerEmail={passengerEmail}
               setPassengerEmail={setPassengerEmail}
-              isChauffeur={isChauffeur}
             />
 
-            {/* Bottom Form Actions */}
-            <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3">
+            {/* Action Buttons */}
+            <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-3">
               <button
                 type="button"
-                onClick={handleStartOver}
-                className="text-xs text-slate-500 hover:text-slate-900 underline cursor-pointer"
+                onClick={() => {
+                  setPickupPlace(null);
+                  setDropoffPlace(null);
+                  setFareData(null);
+                }}
+                className="text-xs text-slate-500 hover:text-slate-800 underline cursor-pointer py-2"
               >
                 Start over
               </button>
 
               <button
                 type="submit"
-                disabled={isSubmitting}
-                className="w-full sm:w-auto px-7 py-3 rounded-xl font-bold uppercase tracking-wider text-xs text-white bg-slate-900 hover:bg-slate-800 shadow-md hover:shadow-lg transition-all active:scale-95 cursor-pointer"
+                disabled={isSubmitting || !calculatedFare}
+                className={`w-full sm:w-auto px-7 py-3.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer ${
+                  isSubmitting || !calculatedFare
+                    ? "bg-slate-200 text-slate-400 cursor-not-allowed shadow-none"
+                    : isChauffeur
+                    ? "bg-slate-900 hover:bg-slate-800 text-white shadow-slate-900/20 active:scale-[0.99]"
+                    : "bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold shadow-amber-400/20 active:scale-[0.99]"
+                }`}
               >
-                {isSubmitting
-                  ? "Confirming Booking..."
-                  : "Confirm & Reserve Ride →"}
+                {isSubmitting ? (
+                  <>
+                    <span className="w-3.5 h-3.5 border-2 border-white/60 border-t-white rounded-full animate-spin" />
+                    <span>Reserving Ride...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Confirm &amp; Reserve Ride</span>
+                    <span>→</span>
+                  </>
+                )}
               </button>
             </div>
           </form>
         </div>
 
-        {/* RIGHT COLUMN: Hughes Live Visual Trip Summary Card (Span 5) */}
-        <div className="lg:col-span-5 sticky top-6">
+        {/* RIGHT COLUMN: Hughes Live Trip Summary Card (Span 5) */}
+        <div className="lg:col-span-5 sticky top-24">
           <HughesTripSummaryCard
-            pickup={pickup}
-            dropoff={dropoff}
+            pickup={pickupDisplayName}
+            dropoff={dropoffDisplayName}
+            isChauffeur={isChauffeur}
             pickupDate={pickupDate}
             pickupTime={pickupTime}
             passengers={passengers}
             luggage={luggage}
             calculatedFare={calculatedFare}
             isCalculatingFare={isCalculatingFare}
-            isChauffeur={isChauffeur}
           />
         </div>
       </div>
