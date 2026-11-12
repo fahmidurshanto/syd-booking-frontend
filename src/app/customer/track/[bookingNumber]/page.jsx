@@ -338,6 +338,18 @@ export default function LiveTrackPage() {
                 {booking.paymentStatus || "pending"}
               </span>
             </div>
+            {booking.paymentMethod && (
+              <div className="flex justify-between py-1 border-b border-white/5">
+                <span className="text-zinc-400">Payment Method:</span>
+                <span className="capitalize text-zinc-200 font-medium">
+                  {booking.paymentMethod === "cash"
+                    ? "Cash to Driver"
+                    : booking.paymentMethod === "online"
+                    ? "Online Card"
+                    : booking.paymentMethod}
+                </span>
+              </div>
+            )}
             <div className="flex justify-between pt-2">
               <span className="text-xs font-bold text-white">Total Fixed Fare:</span>
               <span className="text-lg font-bold font-serif text-[#e8c683]">

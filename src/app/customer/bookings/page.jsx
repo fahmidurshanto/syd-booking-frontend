@@ -228,8 +228,14 @@ export default function CustomerBookingsPage() {
                       <div className="text-xl font-bold font-serif text-[#e8c683]">
                         ${b.fare?.total || 0} {b.fare?.currency || "AUD"}
                       </div>
-                      <div className="text-[11px] text-zinc-400 mt-0.5 capitalize">
-                        Payment: <span className="text-zinc-200">{b.paymentStatus || "pending"}</span>
+                      <div className="text-[11px] text-zinc-400 mt-0.5 capitalize flex items-center justify-end gap-1.5">
+                        <span>Payment:</span>
+                        <span className="text-zinc-200">{b.paymentStatus || "pending"}</span>
+                        {b.paymentMethod && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/10 uppercase tracking-wide text-zinc-300 font-mono">
+                            {b.paymentMethod}
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>

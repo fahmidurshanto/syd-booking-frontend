@@ -48,7 +48,7 @@ export default function StripePaymentForm({
         (paymentIntent.status === "succeeded" ||
           paymentIntent.status === "processing")
       ) {
-        // Notify backend to confirm the booking status
+        // Notify backend to confirm the booking status with online paymentMethod
         const API_BASE =
           process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
         try {
@@ -59,6 +59,7 @@ export default function StripePaymentForm({
               paymentIntentId: paymentIntent.id,
               bookingId: booking?.id || booking?._id,
               bookingNumber: booking?.bookingNumber,
+              paymentMethod: "online",
             }),
           });
         } catch (confirmErr) {
@@ -68,7 +69,10 @@ export default function StripePaymentForm({
           );
         }
 
-        onPaymentSuccess(paymentIntent);
+        onPaymentSuccess({
+          ...paymentIntent,
+          paymentMethod: "online",
+        });
       } else {
         setErrorMessage("Payment status pending or incomplete. Please check.");
       }
@@ -79,6 +83,37 @@ export default function StripePaymentForm({
       );
     } finally {
       setIsProcessing(false);
+    }
+  };
+
+  const handleCashClick = async (e) => {
+    if (e?.preventDefault) e.preventDefault();
+    setIsProcessing(true);
+    setErrorMessage("");
+
+    const API_BASE =
+      process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+    const refOrId = booking?.bookingNumber || booking?.id || booking?._id;
+
+    try {
+      if (refOrId) {
+        // Detect cash payment and update booking paymentMethod to 'cash'
+        await fetch(`${API_BASE}/bookings/${refOrId}/status`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            paymentMethod: "cash",
+            paymentStatus: "cash_to_driver",
+          }),
+        });
+      }
+    } catch (err) {
+      console.warn("Failed to update booking payment method to cash:", err);
+    } finally {
+      setIsProcessing(false);
+      if (onCancel) {
+        onCancel({ paymentMethod: "cash" });
+      }
     }
   };
 
@@ -103,7 +138,7 @@ export default function StripePaymentForm({
           <button
             type="button"
             disabled={isProcessing}
-            onClick={onCancel}
+            onClick={handleCashClick}
             className="flex-1 py-3 rounded-xl border border-white/20 text-xs font-semibold text-zinc-300 hover:text-white hover:border-white/40 transition-all cursor-pointer disabled:opacity-50"
           >
             Pay Later / Cash

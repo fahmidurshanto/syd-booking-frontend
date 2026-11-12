@@ -234,9 +234,13 @@ export default function CustomerInvoicePage() {
         {/* Payment Confirmation Badge */}
         <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-between text-xs">
           <div className="flex items-center gap-2">
-            <span className="text-emerald-400 font-bold">✓ Payment Status:</span>
+            <span className="text-emerald-400 font-bold">✓ Payment:</span>
             <span className="uppercase font-semibold text-white">
-              {booking.paymentStatus === "paid" ? "PAID IN FULL (ONLINE CARD)" : booking.paymentStatus || "PENDING"}
+              {booking.paymentStatus === "paid"
+                ? "PAID IN FULL (ONLINE CARD)"
+                : booking.paymentMethod === "cash" || booking.paymentStatus === "cash_to_driver"
+                ? "PAY IN VEHICLE (CASH TO DRIVER)"
+                : booking.paymentStatus || "PENDING"}
             </span>
           </div>
           <span className="text-zinc-400 text-[11px]">Thank you for traveling with SYD.</span>

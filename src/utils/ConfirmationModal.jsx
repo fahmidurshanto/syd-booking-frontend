@@ -23,12 +23,17 @@ export default function ConfirmationModal({
   onClose,
   onReset,
 }) {
+  const [currentBooking, setCurrentBooking] = useState(confirmedBooking);
   const [clientSecret, setClientSecret] = useState(null);
   const [publishableKey, setPublishableKey] = useState(null);
   const [isInitializingPayment, setIsInitializingPayment] = useState(false);
   const [paymentError, setPaymentError] = useState("");
   const [paymentCompleted, setPaymentCompleted] = useState(false);
   const [showPaymentSection, setShowPaymentSection] = useState(true);
+
+  useEffect(() => {
+    setCurrentBooking(confirmedBooking);
+  }, [confirmedBooking]);
 
   // Card region state: 'domestic' (1.65% + $0.30) vs 'international' (3.5% + $0.30)
   const [cardType, setCardType] = useState("domestic");
@@ -137,11 +142,12 @@ export default function ConfirmationModal({
 
   const handlePaymentDone = (paymentIntent) => {
     setPaymentCompleted(true);
-    // Update booking in local storage with paid surcharge breakdown
+    // Update booking in local storage with paid surcharge breakdown and paymentMethod: online
     const updated = {
-      ...confirmedBooking,
+      ...(currentBooking || confirmedBooking),
       status: "confirmed",
       paymentStatus: "paid",
+      paymentMethod: "online",
       fare: {
         total: feeCalc.total,
         baseFare: feeCalc.baseFare,
@@ -150,13 +156,88 @@ export default function ConfirmationModal({
         cardType: feeCalc.cardType,
       },
       paymentDetails: {
+        ...(currentBooking?.paymentDetails || confirmedBooking?.paymentDetails || {}),
         paymentIntentId: paymentIntent?.id || "pi_mock",
+        paymentMethod: "online",
         paidAmount: feeCalc.total,
         paidCurrency: fareCurrency,
         paidAt: new Date().toISOString(),
       },
     };
+    setCurrentBooking(updated);
     saveCustomerBooking(updated);
+  };
+
+  const handleCashSelected = async () => {
+    setShowPaymentSection(false);
+    const updated = {
+      ...(currentBooking || confirmedBooking),
+      paymentMethod: "cash",
+      paymentStatus: "cash_to_driver",
+      paymentDetails: {
+        ...(currentBooking?.paymentDetails || confirmedBooking?.paymentDetails || {}),
+        paymentMethod: "cash",
+      },
+    };
+    setCurrentBooking(updated);
+    saveCustomerBooking(updated);
+
+    const refOrId =
+      currentBooking?.bookingNumber ||
+      confirmedBooking?.bookingNumber ||
+      currentBooking?.id ||
+      confirmedBooking?.id ||
+      currentBooking?._id ||
+      confirmedBooking?._id;
+
+    if (refOrId) {
+      try {
+        await fetch(`${API_BASE}/bookings/${refOrId}/status`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            paymentMethod: "cash",
+            paymentStatus: "cash_to_driver",
+          }),
+        });
+      } catch (err) {
+        console.warn("Failed to update booking to cash payment:", err);
+      }
+    }
+  };
+
+  const handleSwitchToOnline = async () => {
+    setShowPaymentSection(true);
+    const updated = {
+      ...(currentBooking || confirmedBooking),
+      paymentMethod: "online",
+      paymentStatus: "pending",
+    };
+    setCurrentBooking(updated);
+    saveCustomerBooking(updated);
+
+    const refOrId =
+      currentBooking?.bookingNumber ||
+      confirmedBooking?.bookingNumber ||
+      currentBooking?.id ||
+      confirmedBooking?.id ||
+      currentBooking?._id ||
+      confirmedBooking?._id;
+
+    if (refOrId) {
+      try {
+        await fetch(`${API_BASE}/bookings/${refOrId}/status`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            paymentMethod: "online",
+            paymentStatus: "pending",
+          }),
+        });
+      } catch (err) {
+        console.warn("Failed to reset booking payment method to online:", err);
+      }
+    }
   };
 
   return (
@@ -272,6 +353,16 @@ export default function ConfirmationModal({
                   <span className="text-zinc-400">Email:</span>
                   <span className="font-medium text-white truncate max-w-[180px]">{passengerEmail || confirmedBooking.passengerEmail}</span>
                 </div>
+                <div className="flex justify-between text-zinc-300">
+                  <span className="text-zinc-400">Payment:</span>
+                  <span className="font-semibold text-[#e8c683]">
+                    {paymentCompleted
+                      ? "Online Card (Paid)"
+                      : !showPaymentSection || currentBooking?.paymentMethod === "cash"
+                      ? "Cash to Driver"
+                      : "Online Card (Pending)"}
+                  </span>
+                </div>
               </div>
 
               {/* Base Fare Summary */}
@@ -337,12 +428,15 @@ export default function ConfirmationModal({
               ) : !showPaymentSection ? (
                 /* Pay Later / In-car Payment Option Selected */
                 <div className="py-6 flex flex-col items-center justify-center space-y-4 text-center">
-                  <div className="w-12 h-12 rounded-full bg-zinc-800 border border-white/20 text-zinc-300 flex items-center justify-center text-xl">
-                    🚗
+                  <div className="w-12 h-12 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-400 flex items-center justify-center text-xl">
+                    💵
                   </div>
                   <div>
-                    <h4 className="text-sm sm:text-base font-bold text-white">
-                      Pay in Vehicle Selected (Zero Surcharge)
+                    <span className="text-[10px] uppercase font-bold tracking-wider px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                      Payment Method: Cash
+                    </span>
+                    <h4 className="text-sm sm:text-base font-bold text-white mt-2">
+                      Pay Cash in Vehicle (Zero Surcharge)
                     </h4>
                     <p className="text-xs text-zinc-300 mt-1 max-w-xs">
                       You can pay exactly <span className="text-white font-semibold">${baseFare} {fareCurrency}</span> via Cash directly to the driver upon ride completion without online card surcharge.
@@ -351,7 +445,7 @@ export default function ConfirmationModal({
                   <div className="w-full space-y-2 pt-2">
                     <button
                       type="button"
-                      onClick={() => setShowPaymentSection(true)}
+                      onClick={handleSwitchToOnline}
                       className="w-full py-2.5 rounded-xl border border-[#c8a05c]/60 text-xs font-semibold text-[#c8a05c] hover:bg-[#c8a05c]/10 transition-all cursor-pointer"
                     >
                       Pay Online with Card Instead
@@ -468,13 +562,11 @@ export default function ConfirmationModal({
                           }}
                         >
                           <StripePaymentForm
-                            booking={confirmedBooking}
+                            booking={currentBooking || confirmedBooking}
                             amount={feeCalc.total.toFixed(2)}
                             currency={fareCurrency}
                             onPaymentSuccess={handlePaymentDone}
-                            onCancel={() => {
-                              setShowPaymentSection(false);
-                            }}
+                            onCancel={handleCashSelected}
                           />
                         </Elements>
                       </div>
@@ -486,7 +578,7 @@ export default function ConfirmationModal({
                         </p>
                         <button
                           type="button"
-                          onClick={() => setShowPaymentSection(false)}
+                          onClick={handleCashSelected}
                           className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/15 text-xs text-white cursor-pointer transition-all"
                         >
                           Continue with In-Car Payment

@@ -242,6 +242,8 @@ export default function BookingForm({ category = "chauffeur" }) {
           distanceKm: calculatedFare.distanceKm,
           durationMin: calculatedFare.durationMin,
         },
+        paymentMethod: "online",
+        paymentStatus: "pending",
       };
 
       const res = await fetch(`${API_BASE}/bookings`, {
