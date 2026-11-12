@@ -234,19 +234,19 @@ export default function AboutUsPage() {
       <section className="relative z-10 w-full py-8 border-b border-white/10 bg-black/40 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
           <div>
-            <div className="text-3xl sm:text-4xl font-extrabold text-[#e8c683] tracking-tight">2.95M+</div>
+            <div className="text-3xl sm:text-4xl font-extrabold text-[#e8c683] tracking-tight">10000</div>
             <div className="text-xs sm:text-sm text-zinc-400 mt-1">Passengers moved nationwide</div>
           </div>
           <div>
-            <div className="text-3xl sm:text-4xl font-extrabold text-[#e8c683] tracking-tight">14,000+</div>
+            <div className="text-3xl sm:text-4xl font-extrabold text-[#e8c683] tracking-tight">1000+</div>
             <div className="text-xs sm:text-sm text-zinc-400 mt-1">5-Star Google Reviews</div>
           </div>
           <div>
-            <div className="text-3xl sm:text-4xl font-extrabold text-[#e8c683] tracking-tight">13+</div>
+            <div className="text-3xl sm:text-4xl font-extrabold text-[#e8c683] tracking-tight">5</div>
             <div className="text-xs sm:text-sm text-zinc-400 mt-1">Key Airport Hubs Served</div>
           </div>
           <div>
-            <div className="text-3xl sm:text-4xl font-extrabold text-[#e8c683] tracking-tight">1,500+</div>
+            <div className="text-3xl sm:text-4xl font-extrabold text-[#e8c683] tracking-tight">250</div>
             <div className="text-xs sm:text-sm text-zinc-400 mt-1">Fleet Vehicles Network</div>
           </div>
         </div>
