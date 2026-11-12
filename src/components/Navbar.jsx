@@ -110,27 +110,12 @@ const NAV_ITEMS = [
   {
     label: "About Us",
     href: "/about-us",
-    dropdown: [
-      {
-        title: "Our Heritage & Standards",
-        desc: "Australia's premier chauffeur & private fleet network",
-        href: "/about-us",
-      },
-      {
-        title: "At Your Service",
-        desc: "Our chauffeur commitment & premium guarantees",
-        href: "/about-us#at-your-service",
-      },
-      {
-        title: "Frequently Asked Questions",
-        desc: "Luggage limits, cancellation policies & payment terms",
-        href: "/about-us#faq",
-      },
-    ],
+    dropdown: [],
   },
   {
     label: "Contact Us",
     href: "/contact-us",
+    dropdown: [],
   },
 ];
 

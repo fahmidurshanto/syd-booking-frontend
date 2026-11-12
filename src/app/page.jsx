@@ -204,7 +204,7 @@ export default function Home() {
           {/* Stat 1 */}
           <div className="stat-item">
             <div className="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight">
-              2.95m
+              10000
             </div>
             <div className="text-xs sm:text-sm text-zinc-300/90 mt-1.5 font-normal leading-snug">
               Passengers moved last 12 months
@@ -214,7 +214,7 @@ export default function Home() {
           {/* Stat 2 */}
           <div className="stat-item">
             <div className="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight">
-              14,000+
+              1000+
             </div>
             <div className="text-xs sm:text-sm text-zinc-300/90 mt-1.5 font-normal leading-snug">
               5 Star Google Reviews
@@ -224,7 +224,7 @@ export default function Home() {
           {/* Stat 3 */}
           <div className="stat-item">
             <div className="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight">
-              13
+              5
             </div>
             <div className="text-xs sm:text-sm text-zinc-300/90 mt-1.5 font-normal leading-snug">
               Offices across Australia, NZ &amp; Singapore
@@ -234,7 +234,7 @@ export default function Home() {
           {/* Stat 4 */}
           <div className="stat-item">
             <div className="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight">
-              1500+
+              250
             </div>
             <div className="text-xs sm:text-sm text-zinc-300/90 mt-1.5 font-normal leading-snug">
               Size of fleet
